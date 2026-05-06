@@ -1,0 +1,10 @@
+{
+  "login_title": "تسجيل الدخول",
+  "email_hint": "البريد الإلكتروني",
+  "email_empty_error": "الرجاء إدخال البريد الإلكتروني",
+  "email_invalid_error": "البريد الإلكتروني غير صالح",
+  "password_hint": "كلمة السر",
+  "password_empty_error": "الرجاء إدخال كلمة السر",
+  "password_length_error": "كلمة السر يجب أن تكون 6 خانات فأكثر",
+  "login_btn": "دخول"
+}

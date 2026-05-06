@@ -1,0 +1,10 @@
+{
+  "login_title": "Login",
+  "email_hint": "Email",
+  "email_empty_error": "Please enter your email",
+  "email_invalid_error": "Invalid email address",
+  "password_hint": "Password",
+  "password_empty_error": "Please enter your password",
+  "password_length_error": "Password must be at least 6 characters",
+  "login_btn": "Login"
+}
