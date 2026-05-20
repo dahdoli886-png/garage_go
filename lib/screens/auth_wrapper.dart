@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import 'login_screen.dart';
 import 'home_screen.dart';
+import 'role_selection_screen.dart'; // 1. استدعينا شاشة اختيار الدور
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -17,7 +17,10 @@ class AuthWrapper extends StatelessWidget {
         // لسا بيحمّل
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            backgroundColor: Color(0xFF243141),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFFF39C12)),
+            ),
           );
         }
 
@@ -27,7 +30,8 @@ class AuthWrapper extends StatelessWidget {
         }
 
         // مش مسجّل
-        return const LoginScreen();
+        // 2. التعديل هون: رح يوديه على شاشة اختيار الدور مباشرة
+        return const RoleSelectionScreen();
       },
     );
   }

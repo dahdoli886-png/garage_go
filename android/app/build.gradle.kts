@@ -22,7 +22,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.garage_go"
-        minSdk = 23 // يفضل نرفعها لـ 23 عشان خدمات جوجل تشتغل بسلاسة
+        minSdk = flutter.minSdkVersion // يفضل نرفعها لـ 23 عشان خدمات جوجل تشتغل بسلاسة
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
