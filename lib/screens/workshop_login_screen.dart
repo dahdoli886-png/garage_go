@@ -41,6 +41,7 @@ class _WorkshopLoginScreenState extends State<WorkshopLoginScreen> {
       await _authService.signIn(
         email: _emailController.text,
         password: _passwordController.text,
+        expectedRole: 'workshop', // <--- إرسال نوع الحساب المتوقع
       );
 
       // 2. في حال النجاح، ننتقل للـ AuthWrapper وهو بقرر يودينا للرئيسية

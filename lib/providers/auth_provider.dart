@@ -21,12 +21,14 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> signIn({
     required String email,
     required String password,
+    required String expectedRole,
   }) async {
     _setStatus(AuthStatus.loading);
     try {
       final credential = await _authService.signIn(
         email: email,
         password: password,
+        expectedRole: expectedRole,
       );
       _user = credential?.user;
       _setStatus(AuthStatus.success);

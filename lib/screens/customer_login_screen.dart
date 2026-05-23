@@ -39,6 +39,7 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
       await _authService.signIn(
         email: _emailController.text,
         password: _passwordController.text,
+        expectedRole: 'customer', // <--- إرسال نوع الحساب المتوقع
       );
 
       if (mounted) {
