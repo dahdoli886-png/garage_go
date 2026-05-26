@@ -1,13 +1,14 @@
 import 'dart:io'; // نحتاجها للتعامل مع الملفات (الصور)
+import 'dart:convert'; // للتعامل مع الـ JSON القادم من Cloudinary
+import 'package:http/http.dart' as http; // مكتبة الرفع لـ Cloudinary
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart'; // مكتبة التخزين للصور
+// تم الاستغناء عن مكتبة firebase_storage لأننا سنستخدم Cloudinary
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage =
-      FirebaseStorage.instance; // تعريف الـ Storage
 
   // مراقبة حالة المستخدم
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -28,7 +29,7 @@ class AuthService {
   Future<UserCredential?> signIn({
     required String email,
     required String password,
-    required String expectedRole, // <--- استلام نوع الحساب المتوقع من الشاشة
+    required String expectedRole, // استلام نوع الحساب المتوقع من الشاشة
   }) async {
     final credential = await _auth.signInWithEmailAndPassword(
       email: email.trim(),
@@ -66,22 +67,40 @@ class AuthService {
     return credential;
   }
 
-  // ─── دالة رفع الصور إلى Firebase Storage ────────────────────
+  // ─── دالة رفع الصور إلى Cloudinary ─────────────────────────────
   Future<String> uploadImage(
     File imageFile,
     String folderName,
     String userId,
   ) async {
-    // إنشاء مسار للصورة: folderName/userId_timestamp.jpg
-    String fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    Reference ref = _storage.ref().child(folderName).child(fileName);
+    // ⚠️ ضع معلومات حسابك هنا
+    String cloudName = "dw5mlpnlh"; //
+    String uploadPreset = "GrageGo"; // اسم الـ Preset الخاص بك (تأكدنا منه)
 
-    // رفع الملف
-    UploadTask uploadTask = ref.putFile(imageFile);
-    TaskSnapshot snapshot = await uploadTask;
+    var uri = Uri.parse("https://api.cloudinary.com/v1_1/$cloudName/image/upload");
+    var request = http.MultipartRequest("POST", uri);
 
-    // إرجاع رابط الصورة (URL) بعد رفعها
-    return await snapshot.ref.getDownloadURL();
+    request.fields['upload_preset'] = uploadPreset;
+    
+    // ترتيب الصور في مجلدات داخل Cloudinary
+    request.fields['folder'] = "GarageGo/$folderName"; 
+
+    request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+
+    var response = await request.send();
+
+    if (response.statusCode == 200) {
+      var responseData = await response.stream.toBytes();
+      var responseString = String.fromCharCodes(responseData);
+      var jsonMap = jsonDecode(responseString);
+      
+      return jsonMap['secure_url']; // إرجاع الرابط المباشر
+    } else {
+      throw FirebaseAuthException(
+        code: 'cloudinary-upload-failed',
+        message: 'فشل رفع الصورة، تأكد من الاتصال بالإنترنت.',
+      );
+    }
   }
 
   // ─── إنشاء حساب جديد (للعميل العادي مع صورة شخصية) ───────────
@@ -111,7 +130,7 @@ class AuthService {
       String uid = credential.user!.uid;
       String profileImageUrl = '';
 
-      // 4. إذا العميل رفع صورة، بنرفعها على الـ Storage ونأخذ الرابط
+      // 4. إذا العميل رفع صورة، بنرفعها على Cloudinary ونأخذ الرابط
       if (profileImage != null) {
         profileImageUrl = await uploadImage(
           profileImage,
@@ -168,7 +187,7 @@ class AuthService {
 
       String uid = credential.user!.uid;
 
-      // رفع الصور للـ Storage واستلام الروابط
+      // رفع الصور لـ Cloudinary واستلام الروابط
       String licenseUrl = await uploadImage(
         licenseImage,
         'workshop_licenses',
@@ -187,7 +206,7 @@ class AuthService {
         'email': email.trim(),
         'phone': phone.trim(),
         'role': 'workshop',
-        'status': 'pending', // <--- أهم نقطة: الحساب مش مفعل فوراً
+        'status': 'pending', // أهم نقطة: الحساب مش مفعل فوراً
         'licenseImageUrl': licenseUrl,
         'shopImageUrl': shopImageUrl,
         'preferredLang': 'ar',
@@ -227,8 +246,10 @@ class AuthService {
         return 'يجب أن تحتوي كلمة السر على 8 أحرف، حرف كبير، رقم، ورمز خاص (!@#\$)';
       case 'email-not-verified':
         return 'يرجى تأكيد بريدك الإلكتروني أولاً لتتمكن من الدخول';
-      case 'wrong-role': // <--- الخطأ الجديد لمنع التداخل
+      case 'wrong-role': 
         return 'هذا الحساب غير مصرح له بالدخول من هنا، يرجى استخدام شاشة الدخول الصحيحة';
+      case 'cloudinary-upload-failed': // تمت إضافة خطأ الرفع هنا
+        return 'فشل رفع الصور، يرجى التأكد من الاتصال بالإنترنت والمحاولة مرة أخرى';
       case 'invalid-email':
         return 'صيغة الإيميل غلط';
       case 'network-request-failed':
