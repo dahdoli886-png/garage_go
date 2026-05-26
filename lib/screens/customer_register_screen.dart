@@ -1,9 +1,9 @@
-import 'dart:io'; // ضروري للتعامل مع ملف الصورة الشخصية
+import 'dart:io'; 
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // نمسك أخطاء الفايربيس
-import 'package:image_picker/image_picker.dart'; // مكتبة اختيار الصور
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart'; 
 import '../services/auth_service.dart';
-import 'customer_login_screen.dart'; // استدعاء صفحة تسجيل الدخول
+import 'customer_login_screen.dart';
 
 class CustomerRegisterScreen extends StatefulWidget {
   const CustomerRegisterScreen({super.key});
@@ -17,13 +17,13 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   final AuthService _authService = AuthService();
   final ImagePicker _picker = ImagePicker();
 
-  // ممسكات النصوص للحقول
+  // ممسكات النصوص
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  File? _profileImage; // متغير حفظ الملف المختار (صار اختيارياً)
+  File? _profileImage;
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -36,48 +36,50 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
     super.dispose();
   }
 
-  // دالة اختيار الصورة الشخصية من المعرض
+  // ─── دالة اختيار الصورة من المعرض ───────────────────────────
   Future<void> _pickProfileImage() async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 60, // جودة مضغوطة مناسبة للبروفايل والرفع السريع
+        imageQuality: 60, // تقليل الجودة لضمان سرعة الرفع
       );
 
       if (pickedFile != null) {
         setState(() {
+          // تحويل XFile إلى File لعرضه
           _profileImage = File(pickedFile.path);
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('حدث خطأ أثناء اختيار الصورة'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ أثناء اختيار الصورة: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
-  // دالة التعامل مع ضغطة زر إنشاء الحساب
+  // ─── دالة التسجيل وإنشاء الحساب ──────────────────────────────
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      // استدعاء دالة الـ register (إذا الـ _profileImage بضله null بتمشي العملية طبيعي)
+      // إرسال البيانات (مع الصورة إذا وجدت) لـ AuthService
       await _authService.register(
         name: _nameController.text,
         email: _emailController.text,
         password: _passwordController.text,
         phone: _phoneController.text,
         role: 'customer',
-        profileImage: _profileImage, // ببعت الملف سواء كان مليان أو null
+        profileImage: _profileImage,
       );
 
       if (mounted) {
-        // رسالة تطلب التحقق من صندوق الوارد لتفعيل الحساب
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -88,7 +90,6 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
           ),
         );
 
-        // الانتقال لصفحة اللوقن واستبدال الشاشة الحالية
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const CustomerLoginScreen()),
@@ -103,10 +104,12 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // التعديل الأهم: طباعة الخطأ الفعلي بدلاً من رسالة عامة لمعرفة المشكلة الدقيقة
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('حدث خطأ في الاتصال بالخادم، حاول مجدداً'),
+            content: Text('خطأ: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
           ),
         );
       }
@@ -123,10 +126,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.white,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -141,7 +141,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                 Center(
                   child: Column(
                     children: [
-                      // تصميم دائرة الصورة الشخصية الاختيارية
+                      // دائرة الصورة
                       GestureDetector(
                         onTap: _pickProfileImage,
                         child: Stack(
@@ -149,6 +149,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                             CircleAvatar(
                               radius: 55,
                               backgroundColor: const Color(0xFF2D3E53),
+                              // العرض الآمن للصورة
                               backgroundImage: _profileImage != null
                                   ? FileImage(_profileImage!)
                                   : null,
@@ -206,7 +207,6 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   icon: Icons.person_outline,
                 ),
                 const SizedBox(height: 16),
-
                 _buildTextField(
                   controller: _emailController,
                   hintText: 'البريد الإلكتروني',
@@ -214,7 +214,6 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
-
                 _buildTextField(
                   controller: _phoneController,
                   hintText: 'رقم الهاتف',
@@ -222,14 +221,12 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 16),
-
                 _buildTextField(
                   controller: _passwordController,
                   hintText: 'كلمة المرور',
                   icon: Icons.lock_outline,
                   isPassword: true,
                 ),
-
                 const SizedBox(height: 40),
 
                 SizedBox(
