@@ -110,7 +110,7 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
     }
   }
 
-  // صندوق الحوار يظهر بعد نجاح العملية لشرح حالة الـ Pending وتأكيد الإيميل
+  // صندوق الحوار يظهر بعد نجاح العملية لتأكيد الإيميل
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -135,12 +135,7 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
             ),
             SizedBox(height: 12),
             Text(
-              '1. تم إرسال رابط تحقق إلى بريدك الإلكتروني، يرجى فتحه والضغط على الرابط لتأكيد الحساب.',
-              style: TextStyle(color: Colors.white70, height: 1.4),
-            ),
-            SizedBox(height: 8),
-            Text(
-              '2. طلبك الآن قيد المراجعة لدى الإدارة للتحقق من الأوراق الرسمية، وسيتم تفعيل حسابك خلال 24 ساعة.',
+              'تم إرسال رابط تحقق إلى بريدك الإلكتروني، يرجى فتحه والضغط على الرابط لتأكيد وتفعيل الحساب الخاص بك لتتمكن من تسجيل الدخول.',
               style: TextStyle(color: Colors.white70, height: 1.4),
             ),
           ],
