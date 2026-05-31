@@ -26,7 +26,7 @@ class AuthWrapper extends StatelessWidget {
 
         // مسجّل دخول
         if (snapshot.hasData && snapshot.data != null) {
-          return const HomeScreen();
+          return const CustomerMainScreen();
         }
 
         // مش مسجّل

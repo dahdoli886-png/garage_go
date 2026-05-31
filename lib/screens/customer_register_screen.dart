@@ -1,7 +1,7 @@
-import 'dart:io'; 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:image_picker/image_picker.dart'; 
+import 'package:image_picker/image_picker.dart';
 import '../services/auth_service.dart';
 import 'customer_login_screen.dart';
 
@@ -22,10 +22,15 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController =
+      TextEditingController(); // 👈 ممسك تأكيد كلمة المرور
 
   File? _profileImage;
   bool _isLoading = false;
+
+  // حالة إظهار/إخفاء كلمات المرور
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -33,6 +38,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose(); // 👈 تنظيف الذاكرة
     super.dispose();
   }
 
@@ -46,7 +52,6 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
 
       if (pickedFile != null) {
         setState(() {
-          // تحويل XFile إلى File لعرضه
           _profileImage = File(pickedFile.path);
         });
       }
@@ -69,7 +74,6 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // إرسال البيانات (مع الصورة إذا وجدت) لـ AuthService
       await _authService.register(
         name: _nameController.text,
         email: _emailController.text,
@@ -104,7 +108,6 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
       }
     } catch (e) {
       if (mounted) {
-        // التعديل الأهم: طباعة الخطأ الفعلي بدلاً من رسالة عامة لمعرفة المشكلة الدقيقة
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('خطأ: ${e.toString()}'),
@@ -126,7 +129,10 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -149,7 +155,6 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                             CircleAvatar(
                               radius: 55,
                               backgroundColor: const Color(0xFF2D3E53),
-                              // العرض الآمن للصورة
                               backgroundImage: _profileImage != null
                                   ? FileImage(_profileImage!)
                                   : null,
@@ -221,11 +226,41 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 16),
+
+                // 👈 حقل كلمة المرور
                 _buildTextField(
                   controller: _passwordController,
                   hintText: 'كلمة المرور',
                   icon: Icons.lock_outline,
                   isPassword: true,
+                  obscureState: _obscurePassword,
+                  onToggleObscure: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                  validator: (val) {
+                    if (val == null || val.isEmpty) return 'هذا الحقل مطلوب';
+                    if (val.length < 8)
+                      return 'كلمة المرور يجب أن لا تقل عن 8 أحرف';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // 👈 حقل تأكيد كلمة المرور
+                _buildTextField(
+                  controller: _confirmPasswordController,
+                  hintText: 'تأكيد كلمة المرور',
+                  icon: Icons.lock_reset_outlined,
+                  isPassword: true,
+                  obscureState: _obscureConfirmPassword,
+                  onToggleObscure: () => setState(
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                  ),
+                  validator: (val) {
+                    if (val == null || val.isEmpty) return 'هذا الحقل مطلوب';
+                    if (val != _passwordController.text)
+                      return 'كلمتا المرور غير متطابقتين';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 40),
 
@@ -261,19 +296,25 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
     );
   }
 
+  // 👈 تم تعديل هذه الدالة لدعم التحقق المخصص وإدارة حالة الإخفاء من الخارج
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
     required IconData icon,
     bool isPassword = false,
+    bool obscureState = false,
+    VoidCallback? onToggleObscure,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
-      obscureText: isPassword && _obscurePassword,
+      obscureText: isPassword && obscureState,
       keyboardType: keyboardType,
       style: const TextStyle(color: Colors.white),
-      validator: (val) => val == null || val.isEmpty ? 'هذا الحقل مطلوب' : null,
+      validator:
+          validator ??
+          (val) => val == null || val.isEmpty ? 'هذا الحقل مطلوب' : null,
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: const TextStyle(color: Colors.white38),
@@ -281,11 +322,10 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
         suffixIcon: isPassword
             ? IconButton(
                 icon: Icon(
-                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                  obscureState ? Icons.visibility : Icons.visibility_off,
                   color: Colors.white54,
                 ),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
+                onPressed: onToggleObscure,
               )
             : null,
         filled: true,
@@ -298,6 +338,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFFF39C12), width: 1.5),
         ),
+        errorStyle: const TextStyle(color: Colors.redAccent),
       ),
     );
   }

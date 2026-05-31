@@ -67,6 +67,11 @@ class AuthService {
     return credential;
   }
 
+  // ─── تحديث بيانات المستخدم ─────────────────────────────────────
+  Future<void> updateUserData(String uid, Map<String, dynamic> data) async {
+    await _firestore.collection('users').doc(uid).update(data);
+  }
+
   // ─── دالة رفع الصور إلى Cloudinary ─────────────────────────────
   Future<String> uploadImage(
     File imageFile,

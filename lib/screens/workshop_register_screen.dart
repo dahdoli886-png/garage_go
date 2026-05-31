@@ -1,7 +1,7 @@
-import 'dart:io'; // ضروري للتعامل مع ملفات الصور
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:image_picker/image_picker.dart'; // مكتبة اختيار الصور
+import 'package:image_picker/image_picker.dart';
 import '../services/auth_service.dart';
 import 'workshop_login_screen.dart';
 
@@ -22,13 +22,18 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController =
+      TextEditingController(); // 👈 ممسك تأكيد كلمة المرور
 
   // متغيرات لحفظ الصور المختارة
   File? _licenseImage;
   File? _shopImage;
 
   bool _isLoading = false;
+
+  // حالة إظهار/إخفاء كلمات المرور
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true; // 👈 حالة لحقل التأكيد
 
   @override
   void dispose() {
@@ -36,6 +41,7 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose(); // 👈 تنظيف الذاكرة
     super.dispose();
   }
 
@@ -122,7 +128,13 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
           children: [
             Icon(Icons.check_circle_rounded, color: Colors.green, size: 30),
             SizedBox(width: 10),
-            Text('تم استلام طلبك بنجاح', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            Text(
+              'تم استلام طلبك بنجاح',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         content: const Column(
@@ -131,7 +143,11 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
           children: [
             Text(
               'خطوات تفعيل حساب ورشتك:',
-              style: TextStyle(color: Color(0xFFF39C12), fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(
+                color: Color(0xFFF39C12),
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
             SizedBox(height: 12),
             Text(
@@ -151,10 +167,19 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
               Navigator.pop(context);
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const WorkshopLoginScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const WorkshopLoginScreen(),
+                ),
               );
             },
-            child: const Text('موافق، فهمت', style: TextStyle(color: Color(0xFFF39C12), fontWeight: FontWeight.bold, fontSize: 16)),
+            child: const Text(
+              'موافق، فهمت',
+              style: TextStyle(
+                color: Color(0xFFF39C12),
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
           ),
         ],
       ),
@@ -169,7 +194,10 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -191,7 +219,7 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Icon(
-                          Icons.add_business_rounded, // أيقونة متجر بسيطة ومتناسقة
+                          Icons.add_business_rounded,
                           size: 40,
                           color: Color(0xFFF39C12),
                         ),
@@ -200,7 +228,11 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
                       const Text(
                         'سجل ورشتك معنا',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       const Text(
@@ -213,24 +245,91 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                _buildTextField(controller: _nameController, hintText: 'اسم الورشة التجاري', icon: Icons.business_rounded),
+                _buildTextField(
+                  controller: _nameController,
+                  hintText: 'اسم الورشة التجاري',
+                  icon: Icons.business_rounded,
+                ),
                 const SizedBox(height: 16),
-                _buildTextField(controller: _emailController, hintText: 'البريد الإلكتروني المهني', icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
+                _buildTextField(
+                  controller: _emailController,
+                  hintText: 'البريد الإلكتروني المهني',
+                  icon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                ),
                 const SizedBox(height: 16),
-                _buildTextField(controller: _phoneController, hintText: 'رقم هاتف الورشة / التواصل', icon: Icons.phone_android_outlined, keyboardType: TextInputType.phone),
+                _buildTextField(
+                  controller: _phoneController,
+                  hintText: 'رقم هاتف الورشة / التواصل',
+                  icon: Icons.phone_android_outlined,
+                  keyboardType: TextInputType.phone,
+                ),
                 const SizedBox(height: 16),
-                _buildTextField(controller: _passwordController, hintText: 'كلمة المرور', icon: Icons.lock_outline, isPassword: true),
-                
+
+                // 👈 حقل كلمة المرور
+                _buildTextField(
+                  controller: _passwordController,
+                  hintText: 'كلمة المرور',
+                  icon: Icons.lock_outline,
+                  isPassword: true,
+                  obscureState: _obscurePassword,
+                  onToggleObscure: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                  validator: (val) {
+                    if (val == null || val.isEmpty) return 'هذا الحقل مطلوب';
+                    if (val.length < 8) return 'يجب أن لا تقل عن 8 أحرف';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // 👈 حقل تأكيد كلمة المرور
+                _buildTextField(
+                  controller: _confirmPasswordController,
+                  hintText: 'تأكيد كلمة المرور',
+                  icon: Icons.lock_reset_outlined,
+                  isPassword: true,
+                  obscureState: _obscureConfirmPassword,
+                  onToggleObscure: () => setState(
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                  ),
+                  validator: (val) {
+                    if (val == null || val.isEmpty) return 'هذا الحقل مطلوب';
+                    if (val != _passwordController.text)
+                      return 'كلمتا المرور غير متطابقتين';
+                    return null;
+                  },
+                ),
+
                 const SizedBox(height: 24),
-                const Text('الوثائق وإثباتات الملكية', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white70)),
+                const Text(
+                  'الوثائق وإثباتات الملكية',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white70,
+                  ),
+                ),
                 const SizedBox(height: 12),
 
                 // أزرار رفع صور الإثباتات (رخصة المهن + واجهة المحل)
                 Row(
                   children: [
-                    Expanded(child: _buildImagePickerButton('صورة رخصة المهن', _licenseImage, () => _pickImage(true))),
+                    Expanded(
+                      child: _buildImagePickerButton(
+                        'صورة رخصة المهن',
+                        _licenseImage,
+                        () => _pickImage(true),
+                      ),
+                    ),
                     const SizedBox(width: 16),
-                    Expanded(child: _buildImagePickerButton('واجهة الورشة', _shopImage, () => _pickImage(false))),
+                    Expanded(
+                      child: _buildImagePickerButton(
+                        'واجهة الورشة',
+                        _shopImage,
+                        () => _pickImage(false),
+                      ),
+                    ),
                   ],
                 ),
 
@@ -243,11 +342,20 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
                     onPressed: _isLoading ? null : _handleRegister,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF39C12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('تقديم طلب التسجيل', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                        : const Text(
+                            'تقديم طلب التسجيل',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -259,41 +367,58 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
     );
   }
 
+  // 👈 دالة الحقول المحدثة لتدعم الفحص المخصص وإدارة الأيقونة من الخارج
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
     required IconData icon,
     bool isPassword = false,
+    bool obscureState = false,
+    VoidCallback? onToggleObscure,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
-      obscureText: isPassword && _obscurePassword,
+      obscureText: isPassword && obscureState,
       keyboardType: keyboardType,
       style: const TextStyle(color: Colors.white),
-      validator: (val) => val == null || val.isEmpty ? 'هذا الحقل مطلوب' : null,
+      validator:
+          validator ??
+          (val) => val == null || val.isEmpty ? 'هذا الحقل مطلوب' : null,
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: const TextStyle(color: Colors.white38),
         prefixIcon: Icon(icon, color: Colors.white54),
         suffixIcon: isPassword
             ? IconButton(
-                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off, color: Colors.white54),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                icon: Icon(
+                  obscureState ? Icons.visibility : Icons.visibility_off,
+                  color: Colors.white54,
+                ),
+                onPressed: onToggleObscure,
               )
             : null,
         filled: true,
         fillColor: const Color(0xFF2D3E53),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFFF39C12), width: 1.5),
         ),
+        errorStyle: const TextStyle(color: Colors.redAccent),
       ),
     );
   }
 
-  Widget _buildImagePickerButton(String label, File? imageFile, VoidCallback onTap) {
+  Widget _buildImagePickerButton(
+    String label,
+    File? imageFile,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -301,19 +426,37 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFF2D3E53),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: imageFile != null ? const Color(0xFFF39C12) : Colors.white10, width: 1.5),
+          border: Border.all(
+            color: imageFile != null ? const Color(0xFFF39C12) : Colors.white10,
+            width: 1.5,
+          ),
         ),
         child: imageFile != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: Image.file(imageFile, fit: BoxFit.cover, width: double.infinity),
+                child: Image.file(
+                  imageFile,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                ),
               )
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.cloud_upload_outlined, color: Color(0xFFF39C12), size: 32),
+                  const Icon(
+                    Icons.cloud_upload_outlined,
+                    color: Color(0xFFF39C12),
+                    size: 32,
+                  ),
                   const SizedBox(height: 8),
-                  Text(label, style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w500)),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
       ),
