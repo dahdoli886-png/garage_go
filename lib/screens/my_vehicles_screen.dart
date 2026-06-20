@@ -147,7 +147,7 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(30),
-                    decoration: BoxDecoration(color: const Color(0xFF2D3E53).withOpacity(0.5), shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: const Color(0xFF2D3E53).withValues(alpha: 0.5), shape: BoxShape.circle),
                     child: const Icon(Icons.directions_car_rounded, size: 80, color: Colors.white24),
                   ),
                   const SizedBox(height: 24),
@@ -191,7 +191,7 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: const Color(0xFFF39C12).withOpacity(0.15), borderRadius: BorderRadius.circular(15)),
+                      decoration: BoxDecoration(color: const Color(0xFFF39C12).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(15)),
                       child: const Icon(Icons.directions_car_rounded, color: Color(0xFFF39C12), size: 30),
                     ),
                     const SizedBox(width: 16),

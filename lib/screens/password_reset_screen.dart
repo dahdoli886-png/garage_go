@@ -94,7 +94,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF39C12).withOpacity(0.15),
+                          color: const Color(0xFFF39C12).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Icon(
@@ -164,7 +164,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       elevation: 5,
-                      shadowColor: const Color(0xFFF39C12).withOpacity(0.5),
+                      shadowColor: const Color(0xFFF39C12).withValues(alpha: 0.5),
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)

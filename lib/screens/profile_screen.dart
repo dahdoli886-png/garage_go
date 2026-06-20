@@ -167,7 +167,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFF39C12).withOpacity(0.5), width: 2),
+                            border: Border.all(color: const Color(0xFFF39C12).withValues(alpha: 0.5), width: 2),
                           ),
                           child: CircleAvatar(
                             radius: 55,
@@ -242,7 +242,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(color: const Color(0xFFF39C12).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                          decoration: BoxDecoration(color: const Color(0xFFF39C12).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
                           child: const Icon(Icons.lock_outline_rounded, color: Color(0xFFF39C12)),
                         ),
                         const SizedBox(width: 16),
@@ -281,7 +281,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF39C12).withOpacity(0.15),
+              color: const Color(0xFFF39C12).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: const Color(0xFFF39C12)),

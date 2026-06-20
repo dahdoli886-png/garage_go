@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
-import '../services/order_service.dart';
 import 'add_order_screen.dart';
 import 'role_selection_screen.dart'; // تأكد من مسار صفحة الترحيب
 import 'profile_screen.dart'; // تأكد من مسار صفحة الملف الشخصي
@@ -372,7 +371,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -567,10 +566,10 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
                   child: Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2D3E53).withOpacity(0.5),
+                      color: const Color(0xFF2D3E53).withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: const Color(0xFFF39C12).withOpacity(0.5),
+                        color: const Color(0xFFF39C12).withValues(alpha: 0.5),
                         style: BorderStyle.solid,
                       ),
                     ),
@@ -619,7 +618,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF39C12).withOpacity(0.15),
+                            color: const Color(0xFFF39C12).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
@@ -796,7 +795,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
                                   decoration: BoxDecoration(
                                     color: _getStatusColor(
                                       status,
-                                    ).withOpacity(0.15),
+                                    ).withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: _getStatusColor(status),
@@ -938,7 +937,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
           color: const Color(0xFF2D3E53),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFFF39C12).withOpacity(0.4),
+            color: const Color(0xFFF39C12).withValues(alpha: 0.4),
             width: 1.5,
           ),
         ),
@@ -948,7 +947,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF39C12).withOpacity(0.15),
+                color: const Color(0xFFF39C12).withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: const Color(0xFFF39C12), size: 30),

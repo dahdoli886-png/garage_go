@@ -238,8 +238,9 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                       setState(() => _obscurePassword = !_obscurePassword),
                   validator: (val) {
                     if (val == null || val.isEmpty) return 'هذا الحقل مطلوب';
-                    if (val.length < 8)
+                    if (val.length < 8) {
                       return 'كلمة المرور يجب أن لا تقل عن 8 أحرف';
+                    }
                     return null;
                   },
                 ),
@@ -257,8 +258,9 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   ),
                   validator: (val) {
                     if (val == null || val.isEmpty) return 'هذا الحقل مطلوب';
-                    if (val != _passwordController.text)
+                    if (val != _passwordController.text) {
                       return 'كلمتا المرور غير متطابقتين';
+                    }
                     return null;
                   },
                 ),

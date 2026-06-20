@@ -119,7 +119,7 @@ class OrderDetailsScreen extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(status).withOpacity(0.15),
+                    color: _getStatusColor(status).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: _getStatusColor(status), width: 1.5),
                   ),
@@ -144,7 +144,7 @@ class OrderDetailsScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF334155).withOpacity(0.4),
+                    color: const Color(0xFF334155).withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(

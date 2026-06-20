@@ -33,7 +33,7 @@ class CustomerWelcomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -88,7 +88,7 @@ class CustomerWelcomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 5,
-                  shadowColor: const Color(0xFFF39C12).withOpacity(0.5),
+                  shadowColor: const Color(0xFFF39C12).withValues(alpha: 0.5),
                 ),
                 child: const Text(
                   'تسجيل الدخول',

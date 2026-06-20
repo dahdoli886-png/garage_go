@@ -210,7 +210,7 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF39C12).withOpacity(0.15),
+                          color: const Color(0xFFF39C12).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Icon(
@@ -290,8 +290,9 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
                   ),
                   validator: (val) {
                     if (val == null || val.isEmpty) return 'هذا الحقل مطلوب';
-                    if (val != _passwordController.text)
+                    if (val != _passwordController.text) {
                       return 'كلمتا المرور غير متطابقتين';
+                    }
                     return null;
                   },
                 ),

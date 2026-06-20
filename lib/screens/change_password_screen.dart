@@ -91,7 +91,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF39C12).withOpacity(0.15),
+                    color: const Color(0xFFF39C12).withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.lock_reset_rounded, size: 60, color: Color(0xFFF39C12)),
@@ -149,7 +149,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       elevation: 5,
-                      shadowColor: const Color(0xFFF39C12).withOpacity(0.5),
+                      shadowColor: const Color(0xFFF39C12).withValues(alpha: 0.5),
                     ),
                     child: _isLoading
                         ? const SizedBox(

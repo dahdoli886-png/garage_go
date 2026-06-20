@@ -174,14 +174,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF2D3E53),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
               ),
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.redAccent.withOpacity(0.15),
+                    color: Colors.redAccent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
@@ -229,7 +229,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF39C12).withOpacity(0.15),
+          color: const Color(0xFFF39C12).withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: const Color(0xFFF39C12)),
@@ -260,7 +260,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF39C12).withOpacity(0.15),
+          color: const Color(0xFFF39C12).withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: const Color(0xFFF39C12)),
@@ -269,8 +269,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: const Color(0xFFF39C12),
-        activeTrackColor: const Color(0xFFF39C12).withOpacity(0.5),
+        activeThumbColor: const Color(0xFFF39C12),
+        activeTrackColor: const Color(0xFFF39C12).withValues(alpha: 0.5),
         inactiveThumbColor: Colors.grey,
         inactiveTrackColor: Colors.white10,
       ),

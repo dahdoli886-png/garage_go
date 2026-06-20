@@ -96,7 +96,7 @@ class _SupportScreenState extends State<SupportScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(color: const Color(0xFFF39C12).withOpacity(0.15), shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: const Color(0xFFF39C12).withValues(alpha: 0.15), shape: BoxShape.circle),
                     child: const Icon(Icons.support_agent_rounded, size: 60, color: Color(0xFFF39C12)),
                   ),
                   const SizedBox(height: 16),
