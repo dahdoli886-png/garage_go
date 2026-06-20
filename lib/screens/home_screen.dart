@@ -99,10 +99,15 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
   }
 
   // دوال مساعدة لحالة الطلبات
+  // ─── دوال مساعدة لترجمة حالة الطلب وتحديد اللون ────────────────
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending':
         return Colors.orange;
+      case 'accepted':
+        return Colors.green; // 🚀 أضفنا حالة القبول باللون الأخضر
+      case 'refused':
+        return Colors.redAccent; // 🚀 أضفنا حالة الرفض باللون الأحمر
       case 'driver_assigned':
         return Colors.blue;
       case 'picked_up':
@@ -117,6 +122,8 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
         return Colors.green;
       case 'completed':
         return Colors.grey;
+      case 'cancelled':
+        return Colors.redAccent;
       default:
         return Colors.orange;
     }
@@ -126,6 +133,10 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
     switch (status) {
       case 'pending':
         return 'بانتظار القبول';
+      case 'accepted':
+        return 'مقبول'; // 🚀 ترجمة accepted
+      case 'refused':
+        return 'مرفوض'; // 🚀 ترجمة refused
       case 'driver_assigned':
         return 'تم تعيين سائق';
       case 'picked_up':
@@ -140,8 +151,10 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
         return 'جاهز للتسليم';
       case 'completed':
         return 'مكتمل';
+      case 'cancelled':
+        return 'ملغي';
       default:
-        return status;
+        return status; // في حال ظهرت حالة جديدة غير مسجلة
     }
   }
 
@@ -520,6 +533,12 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
             distance: '3.5 كم',
             rating: '4.5',
           ),
+          const SizedBox(height: 12),
+          _buildNearbyWorkshopCard(
+            name: 'ورشة ميزان دحدولي',
+            distance: '5.0 كم',
+            rating: '5.0',
+          ),
         ],
       ),
     );
@@ -618,7 +637,9 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF39C12).withValues(alpha: 0.15),
+                            color: const Color(
+                              0xFFF39C12,
+                            ).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
@@ -689,10 +710,13 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            // 🚀 التعديل هنا: صرنا نقرأ مباشرة من نفس المكان اللي حفظنا فيه
+            // 🚀 التعديلات هنا: كولكشن orders، وفلتر على customerId
             stream: FirebaseFirestore.instance
                 .collection('orders')
-                .where('userId', isEqualTo: currentUser!.uid)
+                .where(
+                  'customerId',
+                  isEqualTo: currentUser!.uid,
+                ) // 🚀 تم التعديل من userId إلى customerId
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -725,7 +749,6 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
               }
 
               // ترتيب الطلبات من الأحدث للأقدم برمجياً
-              // (عشان نتجنب مشكلة الـ Index في فايربيس)
               final orders = snapshot.data!.docs.toList();
               orders.sort((a, b) {
                 final aData = a.data() as Map<String, dynamic>;
@@ -795,7 +818,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
                                   decoration: BoxDecoration(
                                     color: _getStatusColor(
                                       status,
-                                    ).withValues(alpha: 0.15),
+                                    ).withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: _getStatusColor(status),
@@ -814,7 +837,8 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
                             ),
                             const SizedBox(height: 10),
                             Text(
-                              data['issueDescription'] ?? '',
+                              data['description'] ??
+                                  '', // 🚀 تم التعديل من issueDescription إلى description
                               style: const TextStyle(color: Colors.white70),
                             ),
                             if (data['remotePickup'] == true) ...[

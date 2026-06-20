@@ -5,29 +5,38 @@ class OrderService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // ─── جيب أوردرات المستخدم الحالي ────────────────────────────
+  // ─── جيب أوردرات المستخدم الحالي (العميل) ────────────────────────────
   Stream<QuerySnapshot> getMyOrders() {
     final uid = _auth.currentUser!.uid;
     return _firestore
-        .collection('serviceOrders')
+        .collection('orders')
         .where('customerId', isEqualTo: uid)
         .orderBy('createdAt', descending: true)
         .snapshots();
   }
 
-  // ─── إضافة أوردر جديد ────────────────────────────────────────
+  // ─── إضافة أوردر جديد (متاح لكل الورشات) ─────────────────────────────
   Future<void> addOrder({
+    required String customerName,
+    required String carBrand,
     required String carModel,
+    required String faultType,
     required String issueDescription,
     required bool remotePickup,
   }) async {
     final uid = _auth.currentUser!.uid;
-    await _firestore.collection('serviceOrders').add({
+
+    // إرسال الطلب لـ collection 'orders'
+    await _firestore.collection('orders').add({
       'customerId': uid,
+      'customerName': customerName,
+      'carBrand': carBrand,
       'carModel': carModel,
-      'issueDescription': issueDescription,
+      'faultType': faultType,
+      'description': issueDescription,
       'status': 'pending',
       'remotePickup': remotePickup,
+      'workshopId': 'all', // 🚀 الطلب متاح لكل الورشات
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -38,7 +47,7 @@ class OrderService {
     required String newStatus,
   }) async {
     await _firestore
-        .collection('serviceOrders')
+        .collection('orders') // 🚀 تم التعديل هنا (كانت serviceOrders)
         .doc(orderId)
         .update({'status': newStatus});
   }

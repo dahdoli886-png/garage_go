@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import 'auth_wrapper.dart';
 import 'workshop_register_screen.dart';
 import 'password_reset_screen.dart';
+import 'workshop_main_screen.dart';
 
 class WorkshopLoginScreen extends StatefulWidget {
   const WorkshopLoginScreen({super.key});
@@ -48,7 +49,7 @@ class _WorkshopLoginScreenState extends State<WorkshopLoginScreen> {
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const AuthWrapper()),
+          MaterialPageRoute(builder: (context) => const WorkshopMainScreen()),
           (route) => false,
         );
       }
@@ -105,7 +106,9 @@ class _WorkshopLoginScreenState extends State<WorkshopLoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF39C12).withValues(alpha: 0.15),
+                          color: const Color(
+                            0xFFF39C12,
+                          ).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Icon(
@@ -192,7 +195,9 @@ class _WorkshopLoginScreenState extends State<WorkshopLoginScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       elevation: 5,
-                      shadowColor: const Color(0xFFF39C12).withValues(alpha: 0.5),
+                      shadowColor: const Color(
+                        0xFFF39C12,
+                      ).withValues(alpha: 0.5),
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)

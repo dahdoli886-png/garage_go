@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
-import '../services/auth_service.dart'; // نحتاجه لاستخدام دالة رفع الصور
-import 'my_vehicles_screen.dart'; // مسار صفحة مركباتي لإضافة سيارة إذا لم يوجد
+import '../services/auth_service.dart';
+import 'my_vehicles_screen.dart';
 
 class AddOrderScreen extends StatefulWidget {
   const AddOrderScreen({super.key});
@@ -16,19 +16,26 @@ class AddOrderScreen extends StatefulWidget {
 class _AddOrderScreenState extends State<AddOrderScreen> {
   final _formKey = GlobalKey<FormState>();
   final _issueController = TextEditingController();
-  
+
   final User? user = FirebaseAuth.instance.currentUser;
   final AuthService _authService = AuthService();
   final ImagePicker _picker = ImagePicker();
-  
+
   bool _remotePickup = false;
   bool _isLoading = false;
-  
-  String _selectedCategory = 'ميكانيك';
-  String? _selectedVehicle; // لحفظ المركبة المختارة
-  File? _issueImage; 
 
-  final List<String> _categories = ['ميكانيك', 'كهرباء', 'تكييف', 'إطارات', 'سمكرة', 'أخرى'];
+  String _selectedCategory = 'ميكانيك';
+  String? _selectedVehicle;
+  File? _issueImage;
+
+  final List<String> _categories = [
+    'ميكانيك',
+    'كهرباء',
+    'تكييف',
+    'إطارات',
+    'سمكرة',
+    'أخرى',
+  ];
 
   @override
   void dispose() {
@@ -39,7 +46,10 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
   // دالة اختيار الصورة من الاستوديو
   Future<void> _pickImage() async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
       if (pickedFile != null) {
         setState(() {
           _issueImage = File(pickedFile.path);
@@ -50,7 +60,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
     }
   }
 
-  // دالة إرسال الطلب وحفظه في Firestore
+  // ─── دالة إرسال الطلب (المعدلة لتتوافق مع الورشة) ─────────────
   Future<void> _submitOrder() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -62,28 +72,53 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
     setState(() => _isLoading = true);
 
     try {
-      String imageUrl = '';
-      
-      // إذا اختار العميل صورة، نرفعها أولاً لـ Cloudinary
-      if (_issueImage != null) {
-        imageUrl = await _authService.uploadImage(_issueImage!, 'order_issues', user!.uid);
+      // 1. جلب اسم العميل من قاعدة البيانات لعرضه للورشة
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
+      String customerName = 'عميل مجهول';
+      if (userDoc.exists &&
+          (userDoc.data() as Map<String, dynamic>).containsKey('name')) {
+        customerName = userDoc.get('name');
       }
 
-      // حفظ الطلب في Firestore مباشرة
+      // 2. استخراج اسم الشركة والموديل (بشكل تقريبي من النص)
+      List<String> carDetails = _selectedVehicle!.split(' ');
+      String carBrand = carDetails.isNotEmpty ? carDetails[0] : 'غير محدد';
+
+      String imageUrl = '';
+
+      // 3. إذا اختار العميل صورة، نرفعها لـ Cloudinary
+      if (_issueImage != null) {
+        imageUrl = await _authService.uploadImage(
+          _issueImage!,
+          'order_issues',
+          user!.uid,
+        );
+      }
+
+      // 4. حفظ الطلب في Firestore بالأسماء الصحيحة التي تقرأها الورشة 🚀
       await FirebaseFirestore.instance.collection('orders').add({
-        'userId': user!.uid,
-        'carModel': _selectedVehicle,
-        'category': _selectedCategory,
-        'issueDescription': _issueController.text.trim(),
+        'customerId': user!.uid,
+        'customerName': customerName, // 🚀
+        'carBrand': carBrand, // 🚀
+        'carModel': _selectedVehicle, // 🚀 النص كامل للمركبة
+        'faultType': _selectedCategory, // 🚀
+        'description': _issueController.text.trim(), // 🚀
         'issueImageUrl': imageUrl,
         'remotePickup': _remotePickup,
-        'status': 'pending', // حالة الطلب المبدئية
+        'status': 'pending',
+        'workshopId': 'all', // 🚀 الكلمة السحرية: متاح لجميع الورشات
         'createdAt': FieldValue.serverTimestamp(),
       });
 
       if (mounted) {
         Navigator.pop(context);
-        _showModernSnackBar('تم إرسال طلبك بنجاح، بانتظار الورشة!', Colors.green);
+        _showModernSnackBar(
+          'تم إرسال طلبك بنجاح، بانتظار الورشة!',
+          Colors.green,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -99,9 +134,19 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
       SnackBar(
         content: Row(
           children: [
-            Icon(color == Colors.green ? Icons.check_circle_rounded : Icons.error_rounded, color: Colors.white),
+            Icon(
+              color == Colors.green
+                  ? Icons.check_circle_rounded
+                  : Icons.error_rounded,
+              color: Colors.white,
+            ),
             const SizedBox(width: 12),
-            Expanded(child: Text(message, style: const TextStyle(fontWeight: FontWeight.bold))),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
         ),
         backgroundColor: color,
@@ -123,7 +168,12 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
           // 1. الهيدر العصري
           // =========================================
           Container(
-            padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 30),
+            padding: const EdgeInsets.only(
+              top: 60,
+              left: 20,
+              right: 20,
+              bottom: 30,
+            ),
             decoration: BoxDecoration(
               color: const Color(0xFF0F172A),
               borderRadius: const BorderRadius.only(
@@ -131,15 +181,26 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                 bottomRight: Radius.circular(40),
               ),
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10)),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
               ],
             ),
             child: Row(
               children: [
                 Container(
-                  decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -147,9 +208,19 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('طلب صيانة', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(
+                      'طلب صيانة',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     SizedBox(height: 4),
-                    Text('أخبرنا بمشكلة سيارتك لنساعدك', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                    Text(
+                      'أخبرنا بمشكلة سيارتك لنساعدك',
+                      style: TextStyle(color: Colors.white54, fontSize: 13),
+                    ),
                   ],
                 ),
               ],
@@ -168,9 +239,15 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    
                     // --- 1. تصنيف المشكلة ---
-                    const Text('نوع الخدمة المطلوبة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    const Text(
+                      'نوع الخدمة المطلوبة',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -181,14 +258,29 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                           return Padding(
                             padding: const EdgeInsets.only(left: 8.0),
                             child: ChoiceChip(
-                              label: Text(category, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                              label: Text(
+                                category,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.white70,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
                               selected: isSelected,
                               selectedColor: const Color(0xFFF59E0B),
-                              backgroundColor: const Color(0xFF334155).withValues(alpha: 0.5),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              backgroundColor: const Color(
+                                0xFF334155,
+                              ).withOpacity(0.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                               side: BorderSide.none,
                               onSelected: (selected) {
-                                if (selected) setState(() => _selectedCategory = category);
+                                if (selected)
+                                  setState(() => _selectedCategory = category);
                               },
                             ),
                           );
@@ -198,28 +290,63 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                     const SizedBox(height: 32),
 
                     // --- 2. اختيار المركبة (من الفايربيس) ---
-                    const Text('اختر المركبة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    const Text(
+                      'اختر المركبة',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance.collection('users').doc(user?.uid).collection('vehicles').snapshots(),
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user?.uid)
+                          .collection('vehicles')
+                          .snapshots(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator(color: Color(0xFFF59E0B)));
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFF59E0B),
+                            ),
+                          );
                         }
 
                         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                           return Container(
                             padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(color: const Color(0xFF334155).withValues(alpha: 0.4), borderRadius: BorderRadius.circular(20)),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF334155).withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                             child: Row(
                               children: [
-                                const Icon(Icons.car_crash_rounded, color: Colors.white54),
+                                const Icon(
+                                  Icons.car_crash_rounded,
+                                  color: Colors.white54,
+                                ),
                                 const SizedBox(width: 12),
-                                const Expanded(child: Text('لا يوجد مركبات مضافة', style: TextStyle(color: Colors.white54))),
+                                const Expanded(
+                                  child: Text(
+                                    'لا يوجد مركبات مضافة',
+                                    style: TextStyle(color: Colors.white54),
+                                  ),
+                                ),
                                 TextButton(
-                                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyVehiclesScreen())),
-                                  child: const Text('إضافة مركبة', style: TextStyle(color: Color(0xFFF59E0B))),
-                                )
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const MyVehiclesScreen(),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'إضافة مركبة',
+                                    style: TextStyle(color: Color(0xFFF59E0B)),
+                                  ),
+                                ),
                               ],
                             ),
                           );
@@ -229,30 +356,62 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                         return DropdownButtonFormField<String>(
                           initialValue: _selectedVehicle,
                           dropdownColor: const Color(0xFF1E293B),
-                          style: const TextStyle(color: Colors.white, fontSize: 15),
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFFF59E0B)),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                          ),
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Color(0xFFF59E0B),
+                          ),
                           decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.directions_car_rounded, color: Color(0xFFF59E0B), size: 22),
+                            prefixIcon: const Icon(
+                              Icons.directions_car_rounded,
+                              color: Color(0xFFF59E0B),
+                              size: 22,
+                            ),
                             filled: true,
-                            fillColor: const Color(0xFF334155).withValues(alpha: 0.4),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+                            fillColor: const Color(0xFF334155).withOpacity(0.4),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 20,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: BorderSide.none,
+                            ),
                           ),
                           items: vehicles.map((doc) {
                             final data = doc.data() as Map<String, dynamic>;
-                            final carName = '${data['brand']} ${data['model']} (${data['plateNumber']})';
-                            return DropdownMenuItem(value: carName, child: Text(carName));
+                            final carName =
+                                '${data['brand']} ${data['model']} (${data['plateNumber']})';
+                            return DropdownMenuItem(
+                              value: carName,
+                              child: Text(carName),
+                            );
                           }).toList(),
-                          onChanged: (val) => setState(() => _selectedVehicle = val),
-                          validator: (val) => val == null ? 'يرجى اختيار مركبة' : null,
-                          hint: const Text('اضغط لاختيار مركبتك', style: TextStyle(color: Colors.white38)),
+                          onChanged: (val) =>
+                              setState(() => _selectedVehicle = val),
+                          validator: (val) =>
+                              val == null ? 'يرجى اختيار مركبة' : null,
+                          hint: const Text(
+                            'اضغط لاختيار مركبتك',
+                            style: TextStyle(color: Colors.white38),
+                          ),
                         );
                       },
                     ),
                     const SizedBox(height: 24),
 
                     // --- 3. حقل التفاصيل ---
-                    const Text('تفاصيل العطل', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    const Text(
+                      'تفاصيل العطل',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     _buildModernTextField(
                       controller: _issueController,
@@ -263,7 +422,14 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                     const SizedBox(height: 24),
 
                     // --- 4. إرفاق صورة (مفعلة) ---
-                    const Text('إرفاق صورة للعطل (اختياري)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    const Text(
+                      'إرفاق صورة للعطل (اختياري)',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     GestureDetector(
                       onTap: _pickImage,
@@ -271,21 +437,40 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                         width: double.infinity,
                         height: 120,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF334155).withValues(alpha: 0.3),
+                          color: const Color(0xFF334155).withOpacity(0.3),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: _issueImage != null ? const Color(0xFFF59E0B) : Colors.white24, width: 1.5),
+                          border: Border.all(
+                            color: _issueImage != null
+                                ? const Color(0xFFF59E0B)
+                                : Colors.white24,
+                            width: 1.5,
+                          ),
                         ),
                         child: _issueImage != null
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(18),
-                                child: Image.file(_issueImage!, fit: BoxFit.cover, width: double.infinity),
+                                child: Image.file(
+                                  _issueImage!,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                ),
                               )
                             : const Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.add_a_photo_rounded, color: Color(0xFFF59E0B), size: 32),
+                                  Icon(
+                                    Icons.add_a_photo_rounded,
+                                    color: Color(0xFFF59E0B),
+                                    size: 32,
+                                  ),
                                   SizedBox(height: 8),
-                                  Text('اضغط لإرفاق صورة لضوء الإنذار أو الخراب', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                                  Text(
+                                    'اضغط لإرفاق صورة لضوء الإنذار أو الخراب',
+                                    style: TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ],
                               ),
                       ),
@@ -293,18 +478,33 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                     const SizedBox(height: 32),
 
                     // --- 5. كرت الاستلام التفاعلي ---
-                    const Text('خدمة الاستلام', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    const Text(
+                      'خدمة الاستلام',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     GestureDetector(
-                      onTap: () => setState(() => _remotePickup = !_remotePickup),
+                      onTap: () =>
+                          setState(() => _remotePickup = !_remotePickup),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: _remotePickup ? const Color(0xFFF59E0B).withValues(alpha: 0.15) : const Color(0xFF334155).withValues(alpha: 0.4),
+                          color: _remotePickup
+                              ? const Color(0xFFF59E0B).withOpacity(0.15)
+                              : const Color(0xFF334155).withOpacity(0.4),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: _remotePickup ? const Color(0xFFF59E0B) : Colors.transparent, width: 2),
+                          border: Border.all(
+                            color: _remotePickup
+                                ? const Color(0xFFF59E0B)
+                                : Colors.transparent,
+                            width: 2,
+                          ),
                         ),
                         child: Column(
                           children: [
@@ -313,26 +513,52 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: _remotePickup ? const Color(0xFFF59E0B) : const Color(0xFF0F172A),
+                                    color: _remotePickup
+                                        ? const Color(0xFFF59E0B)
+                                        : const Color(0xFF0F172A),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Icon(Icons.delivery_dining_rounded, color: _remotePickup ? Colors.white : Colors.white54, size: 28),
+                                  child: Icon(
+                                    Icons.delivery_dining_rounded,
+                                    color: _remotePickup
+                                        ? Colors.white
+                                        : Colors.white54,
+                                    size: 28,
+                                  ),
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'استلام السيارة من موقعي',
-                                        style: TextStyle(color: _remotePickup ? const Color(0xFFF59E0B) : Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                        style: TextStyle(
+                                          color: _remotePickup
+                                              ? const Color(0xFFF59E0B)
+                                              : Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
-                                      const Text('سيتوجه المندوب لاستلام سيارتك', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                                      const Text(
+                                        'سيتوجه المندوب لاستلام سيارتك',
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 12,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
-                                if (_remotePickup) const Icon(Icons.check_circle_rounded, color: Color(0xFFF59E0B), size: 28),
+                                if (_remotePickup)
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Color(0xFFF59E0B),
+                                    size: 28,
+                                  ),
                               ],
                             ),
                           ],
@@ -353,24 +579,43 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                           end: Alignment.centerRight,
                         ),
                         boxShadow: [
-                          BoxShadow(color: const Color(0xFFF59E0B).withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 8)),
+                          BoxShadow(
+                            color: const Color(0xFFF59E0B).withOpacity(0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
                         ],
                       ),
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                         onPressed: _isLoading ? null : _submitOrder,
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
                             : const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text('تأكيد وإرسال الطلب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  Text(
+                                    'تأكيد وإرسال الطلب',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                   SizedBox(width: 12),
-                                  Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                                  Icon(
+                                    Icons.send_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                 ],
                               ),
                       ),
@@ -408,12 +653,27 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
           child: Icon(icon, color: const Color(0xFFF59E0B), size: 22),
         ),
         filled: true,
-        fillColor: const Color(0xFF334155).withValues(alpha: 0.4),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 2)),
-        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Colors.redAccent, width: 2)),
+        fillColor: const Color(0xFF334155).withOpacity(0.4),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 20,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+        ),
       ),
     );
   }
