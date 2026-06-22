@@ -55,14 +55,14 @@ class StatusConfig {
 }
 
 final Map<String, StatusConfig> kStatusConfig = {
-  'pending':    StatusConfig(label: 'طلب جديد',       color: Color(0xFFFF6B35), icon: Icons.notifications_rounded,    emoji: '🔔'),
-  'accepted':   StatusConfig(label: 'مقبول',           color: Color(0xFF3B82F6), icon: Icons.check_circle_rounded,     emoji: '✅'),
-  'inspecting': StatusConfig(label: 'جاري الفحص',     color: Color(0xFF8B5CF6), icon: Icons.search_rounded,           emoji: '🔍'),
-  'fixing':     StatusConfig(label: 'تحت الصيانة',    color: Color(0xFF06B6D4), icon: Icons.build_circle_rounded,     emoji: '🔧'),
-  'ready':      StatusConfig(label: 'جاهز للتسليم',   color: Color(0xFF10B981), icon: Icons.star_rounded,             emoji: '✨'),
-  'completed':  StatusConfig(label: 'مكتمل',          color: Color(0xFF6B7280), icon: Icons.flag_rounded,             emoji: '🏁'),
-  'refused':    StatusConfig(label: 'مرفوض',          color: Color(0xFFEF4444), icon: Icons.cancel_rounded,           emoji: '❌'),
-  'cancelled':  StatusConfig(label: 'ملغي',           color: Color(0xFFEF4444), icon: Icons.cancel_outlined,          emoji: '🚫'),
+  'pending':    StatusConfig(label: 'طلب جديد',       color: const Color(0xFFFF6B35), icon: Icons.notifications_rounded,    emoji: '🔔'),
+  'accepted':   StatusConfig(label: 'مقبول',          color: const Color(0xFF3B82F6), icon: Icons.check_circle_rounded,     emoji: '✅'),
+  'inspecting': StatusConfig(label: 'جاري الفحص',     color: const Color(0xFF8B5CF6), icon: Icons.search_rounded,           emoji: '🔍'),
+  'fixing':     StatusConfig(label: 'تحت الصيانة',    color: const Color(0xFF06B6D4), icon: Icons.build_circle_rounded,     emoji: '🔧'),
+  'ready':      StatusConfig(label: 'جاهز للتسليم',   color: const Color(0xFF10B981), icon: Icons.star_rounded,             emoji: '✨'),
+  'completed':  StatusConfig(label: 'مكتمل',          color: const Color(0xFF6B7280), icon: Icons.flag_rounded,             emoji: '🏁'),
+  'refused':    StatusConfig(label: 'مرفوض',          color: const Color(0xFFEF4444), icon: Icons.cancel_rounded,           emoji: '❌'),
+  'cancelled':  StatusConfig(label: 'ملغي',           color: const Color(0xFFEF4444), icon: Icons.cancel_outlined,          emoji: '🚫'),
 };
 
 // ─── الألوان الرئيسية ─────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ const kTextPri   = Color(0xFFE8EDF5);
 const kTextSec   = Color(0xFF94A3B8);
 const kTextMuted = Color(0xFF475569);
 
-// ─── الشاشة الرئيسية ─────────────────────────────────────────────────────────
+// ─── الشاشة الرئيسية للطلبات ──────────────────────────────────────────────────
 class WorkshopHomeScreen extends StatefulWidget {
   const WorkshopHomeScreen({super.key});
 
@@ -103,11 +103,12 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
   }
 
   // ─── تحديث حالة الطلب ────────────────────────────────────────────────────
+  // ─── تحديث حالة الطلب ────────────────────────────────────────────────────
   Future<void> _updateStatus(String orderId, String newStatus,
       {bool isFirstAccept = false}) async {
     try {
       final Map<String, dynamic> data = {'status': newStatus};
-      if (isFirstAccept) data['workshopId'] = _user!.uid;
+      if (isFirstAccept && _user != null) data['workshopId'] = _user.uid;
 
       await FirebaseFirestore.instance
           .collection('orders')
@@ -115,15 +116,24 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
           .update(data);
 
       if (!mounted) return;
-      final isAccept = newStatus == 'accepted';
+      
+      // 🚀 الحل هنا: جلب معلومات الحالة الجديدة (اللون، الاسم، الإيموجي)
+      final cfg = kStatusConfig[newStatus] ?? kStatusConfig['pending']!;
+      
+      // تجهيز الرسالة المناسبة
+      String message = '${cfg.emoji} تم تحديث الحالة إلى: ${cfg.label}';
+      if (newStatus == 'refused') message = '❌ تم رفض الطلب نهائياً';
+      if (newStatus == 'accepted') message = '✅ تم استلام الطلب وإضافته لورشة العمل';
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
-          backgroundColor: isAccept ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+          backgroundColor: cfg.color, // 🚀 استخدمنا لون الحالة نفسها عشان تطلع ألوان متناسقة
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          duration: const Duration(seconds: 2), // خليناها تختفي أسرع عشان ما تزعج المستخدم
           content: Text(
-            isAccept ? '✅ تم استلام الطلب بنجاح' : '❌ تم رفض الطلب',
+            message,
             style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
             textDirection: TextDirection.rtl,
           ),
@@ -139,16 +149,14 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
       );
     }
   }
-
   // ─── بناء الشاشة ─────────────────────────────────────────────────────────
+// ─── بناء الشاشة ─────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: kBg,
-        // ─ AppBar ثابت وواضح ─
-        appBar: _buildAppBar(context),
         body: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('orders')
@@ -158,27 +166,41 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
           builder: (context, snap) {
             List<OrderModel> pending = [];
             List<OrderModel> active = [];
+            int completedTodayCount = 0; // 🚀 1. أنشأنا عداد للطلبات المكتملة
 
             if (snap.hasData) {
+              final now = DateTime.now();
+
               for (final doc in snap.data!.docs) {
                 final order = OrderModel.fromDoc(doc);
                 final data = doc.data() as Map<String, dynamic>;
 
                 if (order.status == 'pending' && data['workshopId'] == 'all') {
                   pending.add(order);
-                } else if (data['workshopId'] == _user?.uid &&
-                    !['pending', 'refused', 'completed', 'cancelled']
-                        .contains(order.status)) {
-                  active.add(order);
+                } else if (data['workshopId'] == _user?.uid) {
+                  
+                  // 🚀 2. التحقق من الطلبات المكتملة اليوم
+                  if (order.status == 'completed') {
+                    if (order.createdAt != null &&
+                        order.createdAt!.year == now.year &&
+                        order.createdAt!.month == now.month &&
+                        order.createdAt!.day == now.day) {
+                      completedTodayCount++; // زيادة العداد
+                    }
+                  } 
+                  // 🚀 باقي الطلبات النشطة
+                  else if (!['pending', 'refused', 'cancelled'].contains(order.status)) {
+                    active.add(order);
+                  }
+                  
                 }
               }
             }
 
             return Column(
               children: [
-                // ─ شريط الإحصائيات + التابات ─
-                _buildSubHeader(pending.length, active.length),
-                // ─ المحتوى ─
+                // 🚀 3. تمرير العداد الجديد لدالة الـ Header
+                _buildSubHeader(pending.length, active.length, completedTodayCount),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
@@ -195,100 +217,23 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
       ),
     );
   }
-
-  // ─── AppBar الرئيسي ──────────────────────────────────────────────────────
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      backgroundColor: kSurface,
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      toolbarHeight: 64,
-      leading: Padding(
-        padding: const EdgeInsets.all(10),
-        child: GestureDetector(
-          onTap: () => Scaffold.of(context).openDrawer(),
-          child: Container(
-            decoration: BoxDecoration(
-              color: kBg,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: kBorder),
-            ),
-            child: const Icon(Icons.menu_rounded, color: kTextSec, size: 22),
-          ),
-        ),
-      ),
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [kOrange, kGold],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [BoxShadow(color: kOrange.withOpacity(0.5), blurRadius: 12)],
-            ),
-            child: const Icon(Icons.build_rounded, color: Colors.white, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'لوحة تحكم الورشة',
-                style: TextStyle(color: kTextPri, fontSize: 15, fontWeight: FontWeight.w800),
-              ),
-              Row(
-                children: [
-                  Container(
-                    width: 6, height: 6,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981),
-                      shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: const Color(0xFF10B981).withOpacity(0.6), blurRadius: 6)],
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text('متصل ونشط', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-      centerTitle: true,
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: kBorder),
-      ),
-    );
-  }
-
   // ─── شريط الإحصائيات والتابات ────────────────────────────────────────────
-  Widget _buildSubHeader(int pendingCount, int activeCount) {
+  Widget _buildSubHeader(int pendingCount, int activeCount, int completedTodayCount) {
     return Container(
       color: kSurface,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
         children: [
-          // الإحصائيات
           Row(
             children: [
               _buildStatCard('🔔', pendingCount.toString(), 'طلبات جديدة', kOrange),
               const SizedBox(width: 8),
               _buildStatCard('⚙️', activeCount.toString(), 'قيد العمل', const Color(0xFF06B6D4)),
               const SizedBox(width: 8),
-              _buildStatCard('✅', '0', 'مكتملة اليوم', const Color(0xFF10B981)),
+              _buildStatCard('✅', completedTodayCount.toString(), 'مكتملة اليوم', const Color(0xFF10B981)),
             ],
           ),
           const SizedBox(height: 12),
-          // تابات
           Container(
             decoration: BoxDecoration(
               color: kBg,
@@ -436,7 +381,6 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ─ الهيدر ─
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -456,21 +400,17 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                 _buildStatusBadge(cfg),
               ],
             ),
-
-            // ─ فاصل ─
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 14),
               child: Container(
                 height: 1,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Colors.transparent, kBorder, Colors.transparent],
                   ),
                 ),
               ),
             ),
-
-            // ─ معلومات ─
             Row(
               children: [
                 Expanded(child: _buildInfoCell('👤', 'العميل', order.customerName)),
@@ -480,14 +420,10 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
             ),
             const SizedBox(height: 10),
             _buildDescriptionBox(order.description),
-
-            // ─ شريط التقدم (للسيارات النشطة) ─
             if (!isPending && order.status != 'completed') ...[
               const SizedBox(height: 16),
               _buildProgressBar(order.status),
             ],
-
-            // ─ الأزرار ─
             const SizedBox(height: 16),
             if (isPending)
               Row(
@@ -593,7 +529,6 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
         Row(
           children: List.generate(steps.length * 2 - 1, (i) {
             if (i.isOdd) {
-              // خط الوصل
               final lineIdx = i ~/ 2;
               final isActive = lineIdx < currentIdx;
               return Expanded(
@@ -608,7 +543,6 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                 ),
               );
             }
-            // دائرة
             final stepIdx = i ~/ 2;
             final isActive = stepIdx <= currentIdx;
             final isCurrent = stepIdx == currentIdx;
@@ -756,7 +690,6 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle
               Center(
                 child: Container(
                   width: 40, height: 4,
