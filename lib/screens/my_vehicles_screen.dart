@@ -139,7 +139,7 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
                                       );
                                     }
                                   } catch (e) {
-                                    if (mounted)
+                                    if (mounted) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -148,6 +148,7 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
                                           backgroundColor: Colors.redAccent,
                                         ),
                                       );
+                                    }
                                   } finally {
                                     setModalState(() => isSaving = false);
                                   }
@@ -192,18 +193,20 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
           .collection('vehicles')
           .doc(vehicleId)
           .delete();
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('تم حذف المركبة'),
             backgroundColor: Colors.redAccent,
           ),
         );
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('خطأ: $e')));
+      }
     }
   }
 

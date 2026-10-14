@@ -818,7 +818,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
                                   decoration: BoxDecoration(
                                     color: _getStatusColor(
                                       status,
-                                    ).withOpacity(0.15),
+                                    ).withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: _getStatusColor(status),

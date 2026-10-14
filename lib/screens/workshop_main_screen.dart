@@ -85,7 +85,7 @@ class _WorkshopMainScreenState extends State<WorkshopMainScreen> {
               decoration: BoxDecoration(
                 gradient: const LinearGradient(colors: [_kOrange, _kGold], begin: Alignment.topLeft, end: Alignment.bottomRight),
                 borderRadius: BorderRadius.circular(10),
-                boxShadow: [BoxShadow(color: _kOrange.withOpacity(0.5), blurRadius: 12)],
+                boxShadow: [BoxShadow(color: _kOrange.withValues(alpha: 0.5), blurRadius: 12)],
               ),
               child: const Icon(Icons.build_rounded, color: Colors.white, size: 18),
             ),
@@ -104,7 +104,7 @@ class _WorkshopMainScreenState extends State<WorkshopMainScreen> {
                   children: [
                     Container(
                       width: 6, height: 6,
-                      decoration: BoxDecoration(color: const Color(0xFF10B981), shape: BoxShape.circle, boxShadow: [BoxShadow(color: const Color(0xFF10B981).withOpacity(0.6), blurRadius: 6)]),
+                      decoration: BoxDecoration(color: const Color(0xFF10B981), shape: BoxShape.circle, boxShadow: [BoxShadow(color: const Color(0xFF10B981).withValues(alpha: 0.6), blurRadius: 6)]),
                     ),
                     const SizedBox(width: 4),
                     const Text('متصل ونشط', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.w600)),
@@ -136,7 +136,7 @@ class _WorkshopMainScreenState extends State<WorkshopMainScreen> {
       decoration: BoxDecoration(
         color: _kSurface,
         border: const Border(top: BorderSide(color: _kBorder, width: 1)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, -4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, -4))],
       ),
       child: SafeArea(
         top: false,
@@ -156,9 +156,9 @@ class _WorkshopMainScreenState extends State<WorkshopMainScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: isActive
                         ? BoxDecoration(
-                            color: activeColor.withOpacity(0.1), 
+                            color: activeColor.withValues(alpha: 0.1), 
                             borderRadius: BorderRadius.circular(14), 
-                            border: Border.all(color: activeColor.withOpacity(0.3)))
+                            border: Border.all(color: activeColor.withValues(alpha: 0.3)))
                         : null,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -206,7 +206,7 @@ class _WorkshopMainScreenState extends State<WorkshopMainScreen> {
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(colors: [_kOrange, _kGold]),
                       borderRadius: BorderRadius.circular(14),
-                      boxShadow: [BoxShadow(color: _kOrange.withOpacity(0.4), blurRadius: 16)],
+                      boxShadow: [BoxShadow(color: _kOrange.withValues(alpha: 0.4), blurRadius: 16)],
                     ),
                     child: const Icon(Icons.handyman_rounded, color: Colors.white, size: 26),
                   ),
@@ -257,10 +257,10 @@ class _WorkshopMainScreenState extends State<WorkshopMainScreen> {
       child: ListTile(
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        tileColor: isActive ? color.withOpacity(0.08) : Colors.transparent,
+        tileColor: isActive ? color.withValues(alpha: 0.08) : Colors.transparent,
         leading: Container(
           width: 38, height: 38,
-          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
           child: Icon(icon, color: color, size: 20),
         ),
         title: Text(label, style: TextStyle(color: isActive ? color : _kTextPri, fontSize: 14, fontWeight: isActive ? FontWeight.w700 : FontWeight.w500)),

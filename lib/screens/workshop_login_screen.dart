@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
-import 'auth_wrapper.dart';
 import 'workshop_register_screen.dart';
 import 'password_reset_screen.dart';
 import 'workshop_main_screen.dart';

@@ -182,7 +182,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -273,14 +273,15 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                               selectedColor: const Color(0xFFF59E0B),
                               backgroundColor: const Color(
                                 0xFF334155,
-                              ).withOpacity(0.5),
+                              ).withValues(alpha: 0.5),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               side: BorderSide.none,
                               onSelected: (selected) {
-                                if (selected)
+                                if (selected) {
                                   setState(() => _selectedCategory = category);
+                                }
                               },
                             ),
                           );
@@ -319,7 +320,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                           return Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF334155).withOpacity(0.4),
+                              color: const Color(0xFF334155).withValues(alpha: 0.4),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
@@ -371,7 +372,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                               size: 22,
                             ),
                             filled: true,
-                            fillColor: const Color(0xFF334155).withOpacity(0.4),
+                            fillColor: const Color(0xFF334155).withValues(alpha: 0.4),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 20,
                               vertical: 20,
@@ -437,7 +438,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                         width: double.infinity,
                         height: 120,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF334155).withOpacity(0.3),
+                          color: const Color(0xFF334155).withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: _issueImage != null
@@ -496,8 +497,8 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: _remotePickup
-                              ? const Color(0xFFF59E0B).withOpacity(0.15)
-                              : const Color(0xFF334155).withOpacity(0.4),
+                              ? const Color(0xFFF59E0B).withValues(alpha: 0.15)
+                              : const Color(0xFF334155).withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
                             color: _remotePickup
@@ -580,7 +581,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFF59E0B).withOpacity(0.4),
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -653,7 +654,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
           child: Icon(icon, color: const Color(0xFFF59E0B), size: 22),
         ),
         filled: true,
-        fillColor: const Color(0xFF334155).withOpacity(0.4),
+        fillColor: const Color(0xFF334155).withValues(alpha: 0.4),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
           vertical: 20,

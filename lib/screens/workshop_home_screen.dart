@@ -246,7 +246,7 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
               indicator: BoxDecoration(
                 gradient: const LinearGradient(colors: [kOrange, kGold]),
                 borderRadius: BorderRadius.circular(10),
-                boxShadow: [BoxShadow(color: kOrange.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: kOrange.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4))],
               ),
               indicatorSize: TabBarIndicatorSize.tab,
               labelColor: Colors.white,
@@ -265,8 +265,8 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
                           decoration: BoxDecoration(
                             color: _tabController.index == 0
-                                ? Colors.white.withOpacity(0.25)
-                                : kOrange.withOpacity(0.2),
+                                ? Colors.white.withValues(alpha: 0.25)
+                                : kOrange.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -293,8 +293,8 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
                           decoration: BoxDecoration(
                             color: _tabController.index == 1
-                                ? Colors.white.withOpacity(0.25)
-                                : kOrange.withOpacity(0.2),
+                                ? Colors.white.withValues(alpha: 0.25)
+                                : kOrange.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -325,7 +325,7 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
         decoration: BoxDecoration(
           color: kSurface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Column(
           children: [
@@ -371,9 +371,9 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cfg.color.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: cfg.color.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
-          BoxShadow(color: cfg.color.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 4)),
+          BoxShadow(color: cfg.color.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 4)),
         ],
       ),
       child: Padding(
@@ -460,9 +460,9 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: cfg.color.withOpacity(0.12),
+        color: cfg.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cfg.color.withOpacity(0.5)),
+        border: Border.all(color: cfg.color.withValues(alpha: 0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -557,7 +557,7 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                   width: 2,
                 ),
                 boxShadow: isCurrent
-                    ? [BoxShadow(color: kOrange.withOpacity(0.5), blurRadius: 12)]
+                    ? [BoxShadow(color: kOrange.withValues(alpha: 0.5), blurRadius: 12)]
                     : null,
               ),
               child: Center(
@@ -603,7 +603,7 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
         decoration: BoxDecoration(
           gradient: gradient,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: shadow.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: shadow.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 4))],
         ),
         child: Center(
           child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
@@ -618,9 +618,9 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 13),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.6), width: 1.5),
+          border: Border.all(color: color.withValues(alpha: 0.6), width: 1.5),
         ),
         child: Center(
           child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 14)),
@@ -636,10 +636,10 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: cfg.color.withOpacity(0.08),
+          color: cfg.color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cfg.color.withOpacity(0.5), width: 1.5),
-          boxShadow: [BoxShadow(color: cfg.color.withOpacity(0.15), blurRadius: 16)],
+          border: Border.all(color: cfg.color.withValues(alpha: 0.5), width: 1.5),
+          boxShadow: [BoxShadow(color: cfg.color.withValues(alpha: 0.15), blurRadius: 16)],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -714,10 +714,10 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                     decoration: BoxDecoration(
-                      color: isActive ? cfg.color.withOpacity(0.1) : const Color(0xFF07111D),
+                      color: isActive ? cfg.color.withValues(alpha: 0.1) : const Color(0xFF07111D),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: isActive ? cfg.color : kBorder, width: isActive ? 1.5 : 1),
-                      boxShadow: isActive ? [BoxShadow(color: cfg.color.withOpacity(0.2), blurRadius: 16)] : null,
+                      boxShadow: isActive ? [BoxShadow(color: cfg.color.withValues(alpha: 0.2), blurRadius: 16)] : null,
                     ),
                     child: Row(
                       children: [
@@ -736,7 +736,7 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                           Container(
                             width: 8, height: 8,
                             decoration: BoxDecoration(color: cfg.color, shape: BoxShape.circle,
-                              boxShadow: [BoxShadow(color: cfg.color.withOpacity(0.5), blurRadius: 8)]),
+                              boxShadow: [BoxShadow(color: cfg.color.withValues(alpha: 0.5), blurRadius: 8)]),
                           ),
                       ],
                     ),
