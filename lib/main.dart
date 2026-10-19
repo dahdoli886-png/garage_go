@@ -4,12 +4,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
-import 'screens/splash_screen.dart'; 
+import 'providers/billing_provider.dart';
+import 'screens/splash_screen.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await EasyLocalization.ensureInitialized();
 
   try {
@@ -24,18 +24,14 @@ Future<void> main() async {
 
   runApp(
     EasyLocalization(
-      supportedLocales: const [
-        Locale('ar'),
-        Locale('en'),
-      ],
+      supportedLocales: const [Locale('ar'), Locale('en')],
       path: 'assets/translations',
       fallbackLocale: const Locale('ar'),
       startLocale: const Locale('ar'),
       child: MultiProvider(
         providers: [
-          ChangeNotifierProvider(
-            create: (_) => AuthProvider(),
-          ),
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => BillingProvider()),
         ],
         child: const GarageGoApp(),
       ),
@@ -54,7 +50,6 @@ class GarageGoApp extends StatelessWidget {
       locale: context.locale,
       debugShowCheckedModeBanner: false,
       title: 'GarageGo',
-      // التطبيق بيبدأ من هنا
       home: const SplashScreen(),
     );
   }
