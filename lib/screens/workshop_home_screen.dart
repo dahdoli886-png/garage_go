@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/order_service.dart';
+import 'create_inspection_report_screen.dart';
+import 'inspection_report_details_screen.dart';
 
 // ─── نموذج بيانات الطلب ──────────────────────────────────────────────────────
 class OrderModel {
@@ -12,6 +15,8 @@ class OrderModel {
   final String description;
   final String status;
   final DateTime? createdAt;
+  final DateTime? completedAt;
+  final String? inspectionReportId;
 
   OrderModel({
     required this.id,
@@ -22,6 +27,8 @@ class OrderModel {
     required this.description,
     required this.status,
     this.createdAt,
+    this.completedAt,
+    this.inspectionReportId,
   });
 
   factory OrderModel.fromDoc(DocumentSnapshot doc) {
@@ -34,7 +41,9 @@ class OrderModel {
       carModel: d['carModel'] ?? '',
       description: d['description'] ?? '',
       status: d['status'] ?? 'pending',
+      inspectionReportId: d['inspectionReportId'] as String?,
       createdAt: (d['createdAt'] as Timestamp?)?.toDate(),
+      completedAt: (d['completedAt'] as Timestamp?)?.toDate(),
     );
   }
 }
@@ -55,25 +64,65 @@ class StatusConfig {
 }
 
 final Map<String, StatusConfig> kStatusConfig = {
-  'pending':    StatusConfig(label: 'طلب جديد',       color: const Color(0xFFFF6B35), icon: Icons.notifications_rounded,    emoji: '🔔'),
-  'accepted':   StatusConfig(label: 'مقبول',          color: const Color(0xFF3B82F6), icon: Icons.check_circle_rounded,     emoji: '✅'),
-  'inspecting': StatusConfig(label: 'جاري الفحص',     color: const Color(0xFF8B5CF6), icon: Icons.search_rounded,           emoji: '🔍'),
-  'fixing':     StatusConfig(label: 'تحت الصيانة',    color: const Color(0xFF06B6D4), icon: Icons.build_circle_rounded,     emoji: '🔧'),
-  'ready':      StatusConfig(label: 'جاهز للتسليم',   color: const Color(0xFF10B981), icon: Icons.star_rounded,             emoji: '✨'),
-  'completed':  StatusConfig(label: 'مكتمل',          color: const Color(0xFF6B7280), icon: Icons.flag_rounded,             emoji: '🏁'),
-  'refused':    StatusConfig(label: 'مرفوض',          color: const Color(0xFFEF4444), icon: Icons.cancel_rounded,           emoji: '❌'),
-  'cancelled':  StatusConfig(label: 'ملغي',           color: const Color(0xFFEF4444), icon: Icons.cancel_outlined,          emoji: '🚫'),
+  'pending': StatusConfig(
+    label: 'طلب جديد',
+    color: const Color(0xFFFF6B35),
+    icon: Icons.notifications_rounded,
+    emoji: '🔔',
+  ),
+  'accepted': StatusConfig(
+    label: 'مقبول',
+    color: const Color(0xFF3B82F6),
+    icon: Icons.check_circle_rounded,
+    emoji: '✅',
+  ),
+  'inspecting': StatusConfig(
+    label: 'جاري الفحص',
+    color: const Color(0xFF8B5CF6),
+    icon: Icons.search_rounded,
+    emoji: '🔍',
+  ),
+  'fixing': StatusConfig(
+    label: 'تحت الصيانة',
+    color: const Color(0xFF06B6D4),
+    icon: Icons.build_circle_rounded,
+    emoji: '🔧',
+  ),
+  'ready': StatusConfig(
+    label: 'جاهز للتسليم (طلب قديم)',
+    color: const Color(0xFF10B981),
+    icon: Icons.star_rounded,
+    emoji: '✨',
+  ),
+  'completed': StatusConfig(
+    label: 'مكتمل',
+    color: const Color(0xFF6B7280),
+    icon: Icons.flag_rounded,
+    emoji: '🏁',
+  ),
+  'refused': StatusConfig(
+    label: 'مرفوض',
+    color: const Color(0xFFEF4444),
+    icon: Icons.cancel_rounded,
+    emoji: '❌',
+  ),
+  'cancelled': StatusConfig(
+    label: 'ملغي',
+    color: const Color(0xFFEF4444),
+    icon: Icons.cancel_outlined,
+    emoji: '🚫',
+  ),
 };
 
 // ─── الألوان الرئيسية ─────────────────────────────────────────────────────────
-const kBg        = Color(0xFF070D18);
-const kSurface   = Color(0xFF0D1B2A);
-const kSurface2  = Color(0xFF0F2236);
-const kBorder    = Color(0xFF1E3A5F);
-const kOrange    = Color(0xFFFF6B35);
-const kGold      = Color(0xFFF5A623);
-const kTextPri   = Color(0xFFE8EDF5);
-const kTextSec   = Color(0xFF94A3B8);
+const kBg = Color(0xFF070D18);
+const kSurface = Color(0xFF0D1B2A);
+const kSurface2 = Color(0xFF0F2236);
+const kBorder = Color(0xFF1E3A5F);
+const kOrange = Color(0xFFFF6B35);
+const kGold = Color(0xFFF5A623);
+const kTextPri = Color(0xFFE8EDF5);
+const kTextSec = Color(0xFF94A3B8);
 const kTextMuted = Color(0xFF475569);
 
 // ─── الشاشة الرئيسية للطلبات ──────────────────────────────────────────────────
@@ -104,37 +153,47 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
 
   // ─── تحديث حالة الطلب ────────────────────────────────────────────────────
   // ─── تحديث حالة الطلب ────────────────────────────────────────────────────
-  Future<void> _updateStatus(String orderId, String newStatus,
-      {bool isFirstAccept = false}) async {
+  Future<void> _updateStatus(
+    String orderId,
+    String newStatus, {
+    bool isFirstAccept = false,
+  }) async {
     try {
-      final Map<String, dynamic> data = {'status': newStatus};
-      if (isFirstAccept && _user != null) data['workshopId'] = _user.uid;
-
-      await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .update(data);
+      await OrderService().transitionWorkshopOrder(
+        orderId: orderId,
+        newStatus: newStatus,
+      );
 
       if (!mounted) return;
-      
+
       // 🚀 الحل هنا: جلب معلومات الحالة الجديدة (اللون، الاسم، الإيموجي)
       final cfg = kStatusConfig[newStatus] ?? kStatusConfig['pending']!;
-      
+
       // تجهيز الرسالة المناسبة
       String message = '${cfg.emoji} تم تحديث الحالة إلى: ${cfg.label}';
       if (newStatus == 'refused') message = '❌ تم رفض الطلب نهائياً';
-      if (newStatus == 'accepted') message = '✅ تم استلام الطلب وإضافته لورشة العمل';
+      if (newStatus == 'accepted') {
+        message = '✅ تم استلام الطلب وإضافته لورشة العمل';
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
-          backgroundColor: cfg.color, // 🚀 استخدمنا لون الحالة نفسها عشان تطلع ألوان متناسقة
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          duration: const Duration(seconds: 2), // خليناها تختفي أسرع عشان ما تزعج المستخدم
+          backgroundColor:
+              cfg.color, // 🚀 استخدمنا لون الحالة نفسها عشان تطلع ألوان متناسقة
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          duration: const Duration(
+            seconds: 2,
+          ), // خليناها تختفي أسرع عشان ما تزعج المستخدم
           content: Text(
             message,
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
             textDirection: TextDirection.rtl,
           ),
         ),
@@ -143,14 +202,19 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('خطأ: $e'),
+          content: Text(
+            e is WorkshopWorkflowException
+                ? e.message
+                : 'تعذر تحديث الطلب. حاول مجدداً.',
+          ),
           backgroundColor: Colors.redAccent,
         ),
       );
     }
   }
+
   // ─── بناء الشاشة ─────────────────────────────────────────────────────────
-// ─── بناء الشاشة ─────────────────────────────────────────────────────────
+  // ─── بناء الشاشة ─────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -178,21 +242,23 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                 if (order.status == 'pending' && data['workshopId'] == 'all') {
                   pending.add(order);
                 } else if (data['workshopId'] == _user?.uid) {
-                  
                   // 🚀 2. التحقق من الطلبات المكتملة اليوم
                   if (order.status == 'completed') {
-                    if (order.createdAt != null &&
-                        order.createdAt!.year == now.year &&
-                        order.createdAt!.month == now.month &&
-                        order.createdAt!.day == now.day) {
+                    if (order.completedAt != null &&
+                        order.completedAt!.year == now.year &&
+                        order.completedAt!.month == now.month &&
+                        order.completedAt!.day == now.day) {
                       completedTodayCount++; // زيادة العداد
                     }
-                  } 
+                  }
                   // 🚀 باقي الطلبات النشطة
-                  else if (!['pending', 'refused', 'cancelled'].contains(order.status)) {
+                  else if (![
+                    'pending',
+                    'refused',
+                    'cancelled',
+                  ].contains(order.status)) {
                     active.add(order);
                   }
-                  
                 }
               }
             }
@@ -200,7 +266,11 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
             return Column(
               children: [
                 // 🚀 3. تمرير العداد الجديد لدالة الـ Header
-                _buildSubHeader(pending.length, active.length, completedTodayCount),
+                _buildSubHeader(
+                  pending.length,
+                  active.length,
+                  completedTodayCount,
+                ),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
@@ -217,8 +287,13 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
       ),
     );
   }
+
   // ─── شريط الإحصائيات والتابات ────────────────────────────────────────────
-  Widget _buildSubHeader(int pendingCount, int activeCount, int completedTodayCount) {
+  Widget _buildSubHeader(
+    int pendingCount,
+    int activeCount,
+    int completedTodayCount,
+  ) {
     return Container(
       color: kSurface,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -226,11 +301,26 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
         children: [
           Row(
             children: [
-              _buildStatCard('🔔', pendingCount.toString(), 'طلبات جديدة', kOrange),
+              _buildStatCard(
+                '🔔',
+                pendingCount.toString(),
+                'طلبات جديدة',
+                kOrange,
+              ),
               const SizedBox(width: 8),
-              _buildStatCard('⚙️', activeCount.toString(), 'قيد العمل', const Color(0xFF06B6D4)),
+              _buildStatCard(
+                '⚙️',
+                activeCount.toString(),
+                'قيد العمل',
+                const Color(0xFF06B6D4),
+              ),
               const SizedBox(width: 8),
-              _buildStatCard('✅', completedTodayCount.toString(), 'مكتملة اليوم', const Color(0xFF10B981)),
+              _buildStatCard(
+                '✅',
+                completedTodayCount.toString(),
+                'مكتملة اليوم',
+                const Color(0xFF10B981),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -246,13 +336,25 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
               indicator: BoxDecoration(
                 gradient: const LinearGradient(colors: [kOrange, kGold]),
                 borderRadius: BorderRadius.circular(10),
-                boxShadow: [BoxShadow(color: kOrange.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4))],
+                boxShadow: [
+                  BoxShadow(
+                    color: kOrange.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               indicatorSize: TabBarIndicatorSize.tab,
               labelColor: Colors.white,
               unselectedLabelColor: kTextMuted,
-              labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
               tabs: [
                 Tab(
                   child: Row(
@@ -262,7 +364,10 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                       if (pendingCount > 0) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 1,
+                          ),
                           decoration: BoxDecoration(
                             color: _tabController.index == 0
                                 ? Colors.white.withValues(alpha: 0.25)
@@ -274,7 +379,9 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
-                              color: _tabController.index == 0 ? Colors.white : kOrange,
+                              color: _tabController.index == 0
+                                  ? Colors.white
+                                  : kOrange,
                             ),
                           ),
                         ),
@@ -290,7 +397,10 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                       if (activeCount > 0) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 1,
+                          ),
                           decoration: BoxDecoration(
                             color: _tabController.index == 1
                                 ? Colors.white.withValues(alpha: 0.25)
@@ -302,7 +412,9 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
-                              color: _tabController.index == 1 ? Colors.white : kOrange,
+                              color: _tabController.index == 1
+                                  ? Colors.white
+                                  : kOrange,
                             ),
                           ),
                         ),
@@ -331,9 +443,21 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
           children: [
             Text(emoji, style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 2),
-            Text(value, style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w800, height: 1)),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                height: 1,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(label, style: const TextStyle(color: kTextMuted, fontSize: 9), textAlign: TextAlign.center),
+            Text(
+              label,
+              style: const TextStyle(color: kTextMuted, fontSize: 9),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -346,7 +470,9 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
       return _buildEmptyState(
         isPending ? '📭' : '🏭',
         isPending ? 'لا يوجد طلبات جديدة' : 'لا يوجد سيارات قيد العمل',
-        isPending ? 'ستظهر الطلبات الواردة هنا فور وصولها' : 'اقبل طلباً جديداً لبدء العمل',
+        isPending
+            ? 'ستظهر الطلبات الواردة هنا فور وصولها'
+            : 'اقبل طلباً جديداً لبدء العمل',
       );
     }
 
@@ -373,7 +499,11 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: cfg.color.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
-          BoxShadow(color: cfg.color.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: cfg.color.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Padding(
@@ -390,10 +520,17 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                     children: [
                       Text(
                         order.faultType,
-                        style: const TextStyle(color: kTextPri, fontSize: 17, fontWeight: FontWeight.w800),
+                        style: const TextStyle(
+                          color: kTextPri,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 3),
-                      Text(timeAgo, style: const TextStyle(color: kTextMuted, fontSize: 11)),
+                      Text(
+                        timeAgo,
+                        style: const TextStyle(color: kTextMuted, fontSize: 11),
+                      ),
                     ],
                   ),
                 ),
@@ -413,9 +550,17 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
             ),
             Row(
               children: [
-                Expanded(child: _buildInfoCell('👤', 'العميل', order.customerName)),
+                Expanded(
+                  child: _buildInfoCell('👤', 'العميل', order.customerName),
+                ),
                 const SizedBox(width: 10),
-                Expanded(child: _buildInfoCell('🚗', 'المركبة', '${order.carBrand} ${order.carModel}')),
+                Expanded(
+                  child: _buildInfoCell(
+                    '🚗',
+                    'المركبة',
+                    '${order.carBrand} ${order.carModel}',
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -425,6 +570,29 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
               _buildProgressBar(order.status),
             ],
             const SizedBox(height: 16),
+            if (order.inspectionReportId?.isNotEmpty == true ||
+                order.status == 'inspecting') ...[
+              _buildButton(
+                label: order.inspectionReportId?.isNotEmpty == true
+                    ? '📋 عرض تقرير الفحص'
+                    : '🔍 إنشاء تقرير فحص',
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                ),
+                shadow: const Color(0xFF8B5CF6),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => order.inspectionReportId?.isNotEmpty == true
+                        ? InspectionReportDetailsScreen(
+                            orderId: order.id,
+                            reportId: order.inspectionReportId!,
+                          )
+                        : CreateInspectionReportScreen(orderId: order.id),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             if (isPending)
               Row(
                 children: [
@@ -432,9 +600,15 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                     flex: 3,
                     child: _buildButton(
                       label: '✅ قبول واستلام',
-                      gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF10B981), Color(0xFF059669)],
+                      ),
                       shadow: const Color(0xFF10B981),
-                      onTap: () => _updateStatus(order.id, 'accepted', isFirstAccept: true),
+                      onTap: () => _updateStatus(
+                        order.id,
+                        'accepted',
+                        isFirstAccept: true,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -469,7 +643,14 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
         children: [
           Text(cfg.emoji, style: const TextStyle(fontSize: 12)),
           const SizedBox(width: 4),
-          Text(cfg.label, style: TextStyle(color: cfg.color, fontSize: 11, fontWeight: FontWeight.w700)),
+          Text(
+            cfg.label,
+            style: TextStyle(
+              color: cfg.color,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -486,9 +667,21 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$emoji $label', style: const TextStyle(color: kTextMuted, fontSize: 10)),
+          Text(
+            '$emoji $label',
+            style: const TextStyle(color: kTextMuted, fontSize: 10),
+          ),
           const SizedBox(height: 3),
-          Text(value, style: const TextStyle(color: kTextSec, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            value,
+            style: const TextStyle(
+              color: kTextSec,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -506,9 +699,15 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('📋 تفاصيل الطلب', style: TextStyle(color: kTextMuted, fontSize: 11)),
+          const Text(
+            '📋 تفاصيل الطلب',
+            style: TextStyle(color: kTextMuted, fontSize: 11),
+          ),
           const SizedBox(height: 4),
-          Text(description, style: const TextStyle(color: kTextSec, fontSize: 13, height: 1.6)),
+          Text(
+            description,
+            style: const TextStyle(color: kTextSec, fontSize: 13, height: 1.6),
+          ),
         ],
       ),
     );
@@ -516,13 +715,14 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
 
   Widget _buildProgressBar(String status) {
     final steps = [
-      {'key': 'accepted',   'label': 'استلام', 'emoji': '📥'},
-      {'key': 'inspecting', 'label': 'فحص',    'emoji': '🔍'},
-      {'key': 'fixing',     'label': 'صيانة',  'emoji': '🔧'},
-      {'key': 'ready',      'label': 'جاهز',   'emoji': '✨'},
-      {'key': 'completed',  'label': 'تسليم',  'emoji': '🏁'},
+      {'key': 'accepted', 'label': 'استلام', 'emoji': '📥'},
+      {'key': 'inspecting', 'label': 'فحص', 'emoji': '🔍'},
+      {'key': 'fixing', 'label': 'صيانة', 'emoji': '🔧'},
+      {'key': 'completed', 'label': 'تسليم', 'emoji': '🏁'},
     ];
-    final currentIdx = steps.indexWhere((s) => s['key'] == status);
+    final currentIdx = status == 'ready'
+        ? steps.length - 1
+        : steps.indexWhere((s) => s['key'] == status);
 
     return Column(
       children: [
@@ -536,7 +736,9 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                   height: 2,
                   decoration: BoxDecoration(
                     gradient: isActive
-                        ? const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF06B6D4)])
+                        ? const LinearGradient(
+                            colors: [Color(0xFF3B82F6), Color(0xFF06B6D4)],
+                          )
                         : null,
                     color: isActive ? null : kBorder,
                   ),
@@ -551,17 +753,31 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isCurrent ? kOrange : (isActive ? const Color(0xFF1E3A5F) : const Color(0xFF07111D)),
+                color: isCurrent
+                    ? kOrange
+                    : (isActive
+                          ? const Color(0xFF1E3A5F)
+                          : const Color(0xFF07111D)),
                 border: Border.all(
-                  color: isCurrent ? kOrange : (isActive ? const Color(0xFF3B82F6) : kBorder),
+                  color: isCurrent
+                      ? kOrange
+                      : (isActive ? const Color(0xFF3B82F6) : kBorder),
                   width: 2,
                 ),
                 boxShadow: isCurrent
-                    ? [BoxShadow(color: kOrange.withValues(alpha: 0.5), blurRadius: 12)]
+                    ? [
+                        BoxShadow(
+                          color: kOrange.withValues(alpha: 0.5),
+                          blurRadius: 12,
+                        ),
+                      ]
                     : null,
               ),
               child: Center(
-                child: Text(steps[stepIdx]['emoji']!, style: const TextStyle(fontSize: 13)),
+                child: Text(
+                  steps[stepIdx]['emoji']!,
+                  style: const TextStyle(fontSize: 13),
+                ),
               ),
             );
           }),
@@ -580,7 +796,9 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
                 style: TextStyle(
                   fontSize: 9,
                   color: isActive ? kTextSec : kBorder,
-                  fontWeight: stepIdx == currentIdx ? FontWeight.w700 : FontWeight.w400,
+                  fontWeight: stepIdx == currentIdx
+                      ? FontWeight.w700
+                      : FontWeight.w400,
                 ),
               ),
             );
@@ -603,16 +821,33 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
         decoration: BoxDecoration(
           gradient: gradient,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: shadow.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: shadow.withValues(alpha: 0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Center(
-          child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildOutlineButton({required String label, required Color color, required VoidCallback onTap}) {
+  Widget _buildOutlineButton({
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -623,13 +858,21 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
           border: Border.all(color: color.withValues(alpha: 0.6), width: 1.5),
         ),
         child: Center(
-          child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 14)),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildManageButton(OrderModel order, StatusConfig cfg) {
+    if (order.status == 'completed') return const SizedBox.shrink();
     return GestureDetector(
       onTap: () => _showManageSheet(order),
       child: Container(
@@ -638,15 +881,27 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
         decoration: BoxDecoration(
           color: cfg.color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cfg.color.withValues(alpha: 0.5), width: 1.5),
-          boxShadow: [BoxShadow(color: cfg.color.withValues(alpha: 0.15), blurRadius: 16)],
+          border: Border.all(
+            color: cfg.color.withValues(alpha: 0.5),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(color: cfg.color.withValues(alpha: 0.15), blurRadius: 16),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.settings_suggest_rounded, color: cfg.color, size: 20),
             const SizedBox(width: 8),
-            Text('⚡ إدارة حالة الصيانة', style: TextStyle(color: cfg.color, fontSize: 14, fontWeight: FontWeight.w800)),
+            Text(
+              '⚡ إدارة حالة الصيانة',
+              style: TextStyle(
+                color: cfg.color,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ],
         ),
       ),
@@ -654,99 +909,16 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
   }
 
   // ─── Bottom Sheet إدارة الطلب ─────────────────────────────────────────────
+
   void _showManageSheet(OrderModel order) {
-    final options = [
-      {'key': 'inspecting', 'label': 'جاري الفحص',   'emoji': '🔍'},
-      {'key': 'fixing',     'label': 'تحت الصيانة',  'emoji': '🔧'},
-      {'key': 'ready',      'label': 'جاهز للتسليم', 'emoji': '✨'},
-      {'key': 'completed',  'label': 'تم التسليم',   'emoji': '🏁'},
-    ];
-
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: kSurface,
       isScrollControlled: true,
-      builder: (_) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF0D1B2A), Color(0xFF1A2744)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border(
-              top: BorderSide(color: kBorder),
-              left: BorderSide(color: kBorder),
-              right: BorderSide(color: kBorder),
-            ),
-          ),
-          padding: EdgeInsets.only(
-            left: 24, right: 24, top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 40,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(color: kBorder, borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              const SizedBox(height: 22),
-              const Text('🛠 تحديث حالة الصيانة', style: TextStyle(color: kTextPri, fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 4),
-              const Text('سيتم إشعار العميل فور التحديث', style: TextStyle(color: kTextMuted, fontSize: 13)),
-              const SizedBox(height: 20),
-
-              ...options.map((opt) {
-                final cfg = kStatusConfig[opt['key']] ?? kStatusConfig['pending']!;
-                final isActive = order.status == opt['key'];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                    if (!isActive) _updateStatus(order.id, opt['key']!);
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: isActive ? cfg.color.withValues(alpha: 0.1) : const Color(0xFF07111D),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: isActive ? cfg.color : kBorder, width: isActive ? 1.5 : 1),
-                      boxShadow: isActive ? [BoxShadow(color: cfg.color.withValues(alpha: 0.2), blurRadius: 16)] : null,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(opt['emoji']!, style: const TextStyle(fontSize: 22)),
-                        const SizedBox(width: 14),
-                        Text(
-                          opt['label']!,
-                          style: TextStyle(
-                            color: isActive ? cfg.color : kTextSec,
-                            fontSize: 15,
-                            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (isActive)
-                          Container(
-                            width: 8, height: 8,
-                            decoration: BoxDecoration(color: cfg.color, shape: BoxShape.circle,
-                              boxShadow: [BoxShadow(color: cfg.color.withValues(alpha: 0.5), blurRadius: 8)]),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ],
-          ),
-        ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
+      builder: (_) => _WorkshopWorkflowSheet(orderId: order.id),
     );
   }
 
@@ -757,18 +929,32 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 80, height: 80,
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
               color: kSurface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: kBorder),
             ),
-            child: Center(child: Text(emoji, style: const TextStyle(fontSize: 36))),
+            child: Center(
+              child: Text(emoji, style: const TextStyle(fontSize: 36)),
+            ),
           ),
           const SizedBox(height: 20),
-          Text(title, style: const TextStyle(color: kTextPri, fontSize: 17, fontWeight: FontWeight.w700)),
+          Text(
+            title,
+            style: const TextStyle(
+              color: kTextPri,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(subtitle, style: const TextStyle(color: kTextMuted, fontSize: 13), textAlign: TextAlign.center),
+          Text(
+            subtitle,
+            style: const TextStyle(color: kTextMuted, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -779,7 +965,160 @@ class _WorkshopHomeScreenState extends State<WorkshopHomeScreen>
     if (dt == null) return '';
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} دقيقة';
-    if (diff.inHours < 24)   return 'منذ ${diff.inHours} ساعة';
+    if (diff.inHours < 24) return 'منذ ${diff.inHours} ساعة';
     return 'منذ ${diff.inDays} يوم';
   }
+}
+
+class _WorkshopWorkflowSheet extends StatefulWidget {
+  final String orderId;
+  const _WorkshopWorkflowSheet({required this.orderId});
+  @override
+  State<_WorkshopWorkflowSheet> createState() => _WorkshopWorkflowSheetState();
+}
+
+class _WorkshopWorkflowSheetState extends State<_WorkshopWorkflowSheet> {
+  late final _orderStream = FirebaseFirestore.instance
+      .collection('orders')
+      .doc(widget.orderId)
+      .snapshots();
+  final _reports = <String, Stream<DocumentSnapshot<Map<String, dynamic>>>>{};
+  bool _saving = false;
+
+  Future<void> _advance(String next) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await OrderService().transitionWorkshopOrder(
+        orderId: widget.orderId,
+        newStatus: next,
+      );
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('تم تحديث حالة الطلب بنجاح.')),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error is WorkshopWorkflowException
+                  ? error.message
+                  : 'تعذر تحديث الحالة. تحقق من الاتصال وحاول مجدداً.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Widget _message(String message) =>
+      Text(message, style: const TextStyle(color: kTextSec));
+
+  Widget _action(Map<String, dynamic> order, Map<String, dynamic>? report) {
+    try {
+      final next = WorkshopWorkflow.nextStatus(
+        order: order,
+        report: report,
+        orderId: widget.orderId,
+        uid: FirebaseAuth.instance.currentUser?.uid ?? '',
+      );
+      if (next == null) return _message('الطلب مكتمل ولا توجد إجراءات أخرى.');
+      final label = order['status'] == 'accepted'
+          ? 'بدء الفحص'
+          : order['status'] == 'fixing'
+          ? 'إنهاء الإصلاح وإكمال الطلب'
+          : order['status'] == 'ready'
+          ? 'إكمال الطلب القديم'
+          : next == 'fixing'
+          ? 'بدء الإصلاح'
+          : 'إكمال الطلب بدون إصلاحات';
+      return SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: _saving ? null : () => _advance(next),
+          style: FilledButton.styleFrom(
+            backgroundColor: kOrange,
+            padding: const EdgeInsets.all(16),
+          ),
+          child: _saving
+              ? const CircularProgressIndicator(color: Colors.white)
+              : Text(label),
+        ),
+      );
+    } on WorkshopWorkflowException catch (error) {
+      return _message(error.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Directionality(
+    textDirection: TextDirection.rtl,
+    child: SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              '🛠 تحديث حالة الصيانة',
+              style: TextStyle(
+                color: kTextPri,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+              stream: _orderStream,
+              builder: (context, snap) {
+                if (snap.hasError) return _message('تعذر تحميل الطلب.');
+                if (!snap.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final order = snap.data!.data();
+                if (order == null) return _message('الطلب غير موجود.');
+                if (!['inspecting', 'fixing'].contains(order['status'])) {
+                  return _action(order, null);
+                }
+                final id = order['inspectionReportId'];
+                if (id is! String || id.isEmpty || id.contains('/')) {
+                  return _message('لم يُحفظ تقرير فحص لهذا الطلب.');
+                }
+                if (order['inspectionStatus'] == 'awaitingApproval') {
+                  return _message('بانتظار موافقات الزبون');
+                }
+                return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                  key: ValueKey(id),
+                  stream: _reports.putIfAbsent(
+                    id,
+                    () => FirebaseFirestore.instance
+                        .collection('orders')
+                        .doc(widget.orderId)
+                        .collection('inspectionReports')
+                        .doc(id)
+                        .snapshots(),
+                  ),
+                  builder: (context, report) {
+                    if (report.hasError) {
+                      return _message('تعذر تحميل تقرير الفحص.');
+                    }
+                    if (!report.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return _action(order, report.data!.data());
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

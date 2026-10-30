@@ -148,7 +148,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
       case 'fixing':
         return 'قيد الإصلاح';
       case 'ready':
-        return 'جاهز للتسليم';
+        return 'جاهز للتسليم (طلب قديم)';
       case 'completed':
         return 'مكتمل';
       case 'cancelled':
